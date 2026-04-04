@@ -13,5 +13,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: Tạo trang /favorites để hiển thị danh sách từ yêu thích**
   *Link: [./favorites_page_20260404/](./favorites_page_20260404/)*
 
-- [ ] **Track: Thêm chọn lọc kanji trong word để xem stroke animation của từng kanji**
+- [x] **Track: Thêm chọn lọc kanji trong word để xem stroke animation của từng kanji**
   *Link: [./kanji_selector_stroke_20260404/](./kanji_selector_stroke_20260404/)*
