@@ -10,5 +10,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: Add real SVG-based stroke order animation using KanjiVG data**
   *Link: [./kanji_stroke_animation_20260403/](./kanji_stroke_animation_20260403/)*
 
-- [ ] **Track: Tạo trang /favorites để hiển thị danh sách từ yêu thích**
+- [x] **Track: Tạo trang /favorites để hiển thị danh sách từ yêu thích**
   *Link: [./favorites_page_20260404/](./favorites_page_20260404/)*
