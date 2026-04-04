@@ -1,0 +1,8 @@
+{
+  "track_id": "favorites_page_20260404",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-04-04T10:30:00Z",
+  "updated_at": "2026-04-04T10:30:00Z",
+  "description": "Tạo trang /favorites để hiển thị danh sách từ yêu thích"
+}
