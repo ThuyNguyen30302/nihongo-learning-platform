@@ -16,5 +16,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: Thêm chọn lọc kanji trong word để xem stroke animation của từng kanji**
   *Link: [./kanji_selector_stroke_20260404/](./kanji_selector_stroke_20260404/)*
 
-- [ ] **Track: Thêm radical data và hiển thị radical breakdown trong WordCard**
+- [x] **Track: Thêm radical data và hiển thị radical breakdown trong WordCard**
   *Link: [./radical_breakdown_20260404/](./radical_breakdown_20260404/)*
