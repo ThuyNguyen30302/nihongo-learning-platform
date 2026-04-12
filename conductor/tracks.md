@@ -21,5 +21,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Thêm chức năng học flash card cho những từ yêu thích, mặt trước là chữ tiếng nhật, mặt sau là nghĩa tiếng việt và ví dụ trong câu**
+- [~] **Track: Thêm chức năng học flash card cho những từ yêu thích, mặt trước là chữ tiếng nhật, mặt sau là nghĩa tiếng việt và ví dụ trong câu**
   *Link: [./flashcard_study_20260412/](./flashcard_study_20260412/)*
