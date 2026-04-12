@@ -18,3 +18,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Thêm radical data và hiển thị radical breakdown trong WordCard**
   *Link: [./radical_breakdown_20260404/](./radical_breakdown_20260404/)*
+
+---
+
+- [ ] **Track: Thêm chức năng học flash card cho những từ yêu thích, mặt trước là chữ tiếng nhật, mặt sau là nghĩa tiếng việt và ví dụ trong câu**
+  *Link: [./flashcard_study_20260412/](./flashcard_study_20260412/)*
