@@ -35,10 +35,12 @@
 
 ### Styling
 - **Tailwind CSS v4**
+- **shadcn/ui** - Component library built on Tailwind CSS
 
 ### Libraries
 - `axios` - HTTP client
 - `lucide-react` - Icons
+- `clsx` + `tailwind-merge` - Utility for className composition (shadcn dependency)
 
 ### Development Tools
 - ESLint for linting
