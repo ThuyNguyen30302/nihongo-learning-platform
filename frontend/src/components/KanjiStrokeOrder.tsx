@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface KanjiStrokeOrderProps {
   kanji: string;
@@ -16,14 +16,15 @@ export default function KanjiStrokeOrder({
   animationSpeed = 500,
   autoPlay = true,
 }: KanjiStrokeOrderProps) {
+  const pathRefs = useRef<Array<SVGPathElement | null>>([]);
   const [currentStroke, setCurrentStroke] = useState(
     autoPlay && strokes.length > 0 ? 0 : -1,
   );
-  const [isPlaying, setIsPlaying] = useState(
-    autoPlay && strokes.length > 0,
+  const [isPlaying, setIsPlaying] = useState(autoPlay && strokes.length > 0);
+  const [pathLengths, setPathLengths] = useState<number[]>(
+    strokes.map(() => 300),
   );
   const [strokeProgress, setStrokeProgress] = useState(0);
-  const pathLengths = strokes.map(() => 300);
 
   const viewBoxSize = 109;
 
@@ -41,6 +42,18 @@ export default function KanjiStrokeOrder({
     "#6366f1",
     "#dc2626",
   ];
+
+  useEffect(() => {
+    pathRefs.current = pathRefs.current.slice(0, strokes.length);
+    setPathLengths(
+      strokes.map((_, index) => {
+        const measuredLength = pathRefs.current[index]?.getTotalLength();
+        return measuredLength && Number.isFinite(measuredLength)
+          ? measuredLength
+          : 300;
+      }),
+    );
+  }, [strokes]);
 
   useEffect(() => {
     if (!isPlaying || currentStroke < 0 || strokes.length === 0) {
@@ -68,6 +81,7 @@ export default function KanjiStrokeOrder({
 
       if (progress >= 1 && isPlaying) {
         if (currentStroke < strokes.length - 1) {
+          setStrokeProgress(0);
           setCurrentStroke((prev) => prev + 1);
         } else {
           setIsPlaying(false);
@@ -133,6 +147,9 @@ export default function KanjiStrokeOrder({
         return (
           <path
             key={index}
+            ref={(element) => {
+              pathRefs.current[index] = element;
+            }}
             d={strokePath}
             fill="none"
             stroke={strokeColor}
