@@ -61,6 +61,21 @@ describe('DatabaseService', () => {
     ).run(1, '日本', 'にほん', 'nihon', 'Japan', 'Nhật Bản');
     db.prepare(
       `
+      INSERT INTO words (kanji, kana, romaji, meaning_vi, meaning_en, part_of_speech, example_sentence, example_meaning_vi)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    ).run(
+      '日本語',
+      'にほんご',
+      'nihongo',
+      'Tiếng Nhật',
+      'Japanese language',
+      'noun',
+      '',
+      '',
+    );
+    db.prepare(
+      `
       INSERT INTO kanji_data (kanji, meaning_vi, meaning_en, on_reading, kun_reading, stroke_count, stroke_paths, stroke_numbers, radical, radical_meaning)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
@@ -88,7 +103,7 @@ describe('DatabaseService', () => {
   it('searches words by kanji', () => {
     const results = service.searchWords('日本');
 
-    expect(results).toHaveLength(1);
+    expect(results.length).toBeGreaterThanOrEqual(1);
     expect(results[0]).toMatchObject({
       id: 1,
       kanji: '日本',
@@ -97,6 +112,33 @@ describe('DatabaseService', () => {
       meaning_vi: 'Nhật Bản',
       meaning_en: 'Japan',
     });
+  });
+
+  it('searches words by romaji mode', () => {
+    const results = service.searchWords('NIHON', 'romaji');
+
+    expect(results.map((word) => word.romaji)).toEqual(['nihon', 'nihongo']);
+  });
+
+  it('searches words by Vietnamese meaning mode', () => {
+    const results = service.searchWords('Tiếng', 'vietnamese');
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ meaning_vi: 'Tiếng Nhật' });
+  });
+
+  it('searches words by kana mode', () => {
+    const results = service.searchWords('にほんご', 'kana');
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ kana: 'にほんご' });
+  });
+
+  it('searches words by kanji mode', () => {
+    const results = service.searchWords('日本語', 'kanji');
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ kanji: '日本語' });
   });
 
   it('returns a word by id', () => {

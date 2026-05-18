@@ -42,6 +42,14 @@ describe('DictionaryService', () => {
         },
       ],
     });
+    expect(databaseService.searchWords).toHaveBeenCalledWith('nihon', 'auto');
+  });
+
+  it('passes explicit search type to the database service', () => {
+    databaseService.searchWords.mockReturnValue([]);
+
+    expect(service.search('nihon', 'romaji')).toEqual({ results: [] });
+    expect(databaseService.searchWords).toHaveBeenCalledWith('nihon', 'romaji');
   });
 
   it('returns the word by id from the database service', () => {
