@@ -11,6 +11,7 @@ export interface SearchResult {
   kana: string;
   romaji: string;
   meaning_vi: string;
+  han_viet?: string;
   meaning_en: string;
   part_of_speech: string;
   example_sentence?: string;
@@ -33,6 +34,7 @@ export class DictionaryService {
         kana: word.kana,
         romaji: word.romaji,
         meaning_vi: word.meaning_vi,
+        han_viet: word.han_viet || '',
         meaning_en: word.meaning_en,
         part_of_speech: word.part_of_speech,
         example_sentence: word.example_sentence || '',

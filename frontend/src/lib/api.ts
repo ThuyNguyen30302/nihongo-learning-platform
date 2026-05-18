@@ -32,13 +32,14 @@ export const getRandomWords = async (count: number = 10): Promise<Word[]> => {
 };
 
 export const getFavorites = async (): Promise<Word[]> => {
-  const response = await api.get<{ favorites: Array<{ id: number; word_id: number; kanji: string; kana: string; romaji: string; meaning_vi: string; meaning_en: string; part_of_speech: string; example_sentence: string; example_meaning_vi: string }> }>('/api/favorites');
+  const response = await api.get<{ favorites: Array<{ id: number; word_id: number; kanji: string; kana: string; romaji: string; meaning_vi: string; han_viet?: string; meaning_en: string; part_of_speech: string; example_sentence: string; example_meaning_vi: string }> }>('/api/favorites');
   return response.data.favorites.map(fav => ({
     id: fav.word_id,
     kanji: fav.kanji,
     kana: fav.kana,
     romaji: fav.romaji,
     meaning_vi: fav.meaning_vi,
+    han_viet: fav.han_viet,
     meaning_en: fav.meaning_en,
     part_of_speech: fav.part_of_speech,
     example_sentence: fav.example_sentence,
@@ -55,7 +56,7 @@ export const removeFavorite = async (wordId: number): Promise<void> => {
 };
 
 export const getFlashcards = async (): Promise<FlashcardData[]> => {
-  const response = await api.get<{ favorites: Array<{ id: number; word_id: number; created_at: string; kanji: string; kana: string; romaji: string; meaning_vi: string; meaning_en: string; part_of_speech: string; example_sentence: string; example_meaning_vi: string }> }>('/api/favorites');
+  const response = await api.get<{ favorites: Array<{ id: number; word_id: number; created_at: string; kanji: string; kana: string; romaji: string; meaning_vi: string; han_viet?: string; meaning_en: string; part_of_speech: string; example_sentence: string; example_meaning_vi: string }> }>('/api/favorites');
   return response.data.favorites.map(fav => ({
     id: fav.id,
     word: {
@@ -64,6 +65,7 @@ export const getFlashcards = async (): Promise<FlashcardData[]> => {
       kana: fav.kana,
       romaji: fav.romaji,
       meaning_vi: fav.meaning_vi,
+      han_viet: fav.han_viet,
       meaning_en: fav.meaning_en,
       part_of_speech: fav.part_of_speech,
       example_sentence: fav.example_sentence,

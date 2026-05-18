@@ -119,6 +119,11 @@ export default function WordCard({ word, onToggleFavorite }: WordCardProps) {
 
               {/* Meaning */}
               <p className="text-body-lg mb-1">{word.meaning_vi}</p>
+              {word.han_viet && (
+                <p className="text-label-md text-muted-foreground mb-2">
+                  Hán Việt: {word.han_viet}
+                </p>
+              )}
               {word.part_of_speech && (
                 <p className="text-label-sm text-muted-foreground mb-2">
                   ({word.part_of_speech})

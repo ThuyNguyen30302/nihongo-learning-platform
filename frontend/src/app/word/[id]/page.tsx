@@ -226,6 +226,11 @@ export default function WordDetailPage() {
           <h1 className="text-headline-lg text-primary mb-2 first-letter:uppercase">
             {word.meaning_vi}
           </h1>
+          {word.han_viet && (
+            <p className="text-body-md text-muted-foreground">
+              Hán Việt: {word.han_viet}
+            </p>
+          )}
 
           <div className="mt-6 pt-6 border-t border-surface-variant">
             <h3 className="text-label-md text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">

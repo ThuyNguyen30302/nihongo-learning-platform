@@ -15,6 +15,7 @@ describe('DatabaseService', () => {
         kana TEXT NOT NULL,
         romaji TEXT NOT NULL,
         meaning_vi TEXT NOT NULL,
+        han_viet TEXT,
         meaning_en TEXT NOT NULL,
         part_of_speech TEXT,
         example_sentence TEXT,

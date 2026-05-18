@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import Database from 'better-sqlite3';
+import * as fs from 'fs';
 import * as path from 'path';
 
 export interface Word {
@@ -8,6 +9,7 @@ export interface Word {
   kana: string;
   romaji: string;
   meaning_vi: string;
+  han_viet?: string;
   meaning_en: string;
   part_of_speech: string;
   example_sentence: string;
@@ -46,6 +48,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     this.db.pragma('journal_mode = WAL');
     this.initializeTables();
     this.seedData();
+    this.populateMissingWordHanViet();
   }
 
   onModuleDestroy() {
@@ -62,6 +65,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         kana TEXT NOT NULL,
         romaji TEXT NOT NULL,
         meaning_vi TEXT NOT NULL,
+        han_viet TEXT,
         meaning_en TEXT NOT NULL,
         part_of_speech TEXT,
         example_sentence TEXT,
@@ -95,7 +99,18 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
 
     // FTS5 full-text search (idempotent — won't recreate if exists)
+    this.ensureColumn('words', 'han_viet', 'TEXT');
     this.initFTS5();
+  }
+
+  private ensureColumn(table: string, column: string, definition: string) {
+    const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as {
+      name: string;
+    }[];
+    if (columns.some((entry) => entry.name === column)) {
+      return;
+    }
+    this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 
   private initFTS5() {
@@ -1104,6 +1119,81 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     insertMany(sampleWords);
   }
 
+  private populateMissingWordHanViet() {
+    const words = this.db
+      .prepare(
+        "SELECT id, kanji FROM words WHERE han_viet IS NULL OR han_viet = ''",
+      )
+      .all() as Pick<Word, 'id' | 'kanji'>[];
+    const kanjiChars = new Set<string>();
+
+    for (const word of words) {
+      for (const char of word.kanji) {
+        if (/[\u4e00-\u9faf]/.test(char)) {
+          kanjiChars.add(char);
+        }
+      }
+    }
+
+    if (kanjiChars.size === 0) {
+      return;
+    }
+
+    const readings = this.loadVietnameseKanjiReadings(kanjiChars);
+    if (readings.size === 0) {
+      return;
+    }
+
+    const update = this.db.prepare(
+      'UPDATE words SET han_viet = ? WHERE id = ?',
+    );
+    const updateBatch = this.db.transaction(() => {
+      for (const word of words) {
+        const hanViet = [...word.kanji]
+          .map((char) => readings.get(char)?.[0])
+          .filter(Boolean)
+          .join(' ');
+        if (hanViet) {
+          update.run(hanViet, word.id);
+        }
+      }
+    });
+
+    updateBatch();
+  }
+
+  private loadVietnameseKanjiReadings(chars: Set<string>) {
+    const readings = new Map<string, string[]>();
+    const xmlPath = path.join(process.cwd(), 'kanjidic2.xml');
+    if (!fs.existsSync(xmlPath)) {
+      return readings;
+    }
+
+    const xml = fs.readFileSync(xmlPath, 'utf8');
+    const characterRegex = /<character>([\s\S]*?)<\/character>/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = characterRegex.exec(xml)) !== null) {
+      const block = match[1];
+      const literal = block.match(/<literal>([^<]+)<\/literal>/)?.[1];
+      if (!literal || !chars.has(literal)) {
+        continue;
+      }
+
+      const vietnamReadings = [
+        ...block.matchAll(/<reading r_type="vietnam">([^<]+)<\/reading>/g),
+      ].map((entry) => entry[1]);
+      if (vietnamReadings.length > 0) {
+        readings.set(literal, vietnamReadings);
+      }
+      if (readings.size === chars.size) {
+        break;
+      }
+    }
+
+    return readings;
+  }
+
   searchWords(query: string, type: SearchType = 'auto'): Word[] {
     const q = query.trim();
     if (!q) return [];
@@ -1233,6 +1323,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         kana,
         romaji,
         meaning_vi,
+        han_viet,
         meaning_en,
         part_of_speech,
         example_sentence,
@@ -1274,7 +1365,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     return this.db
       .prepare(
         `
-      SELECT f.*, w.kanji, w.kana, w.romaji, w.meaning_vi, w.meaning_en, w.part_of_speech, w.example_sentence, w.example_meaning_vi
+      SELECT f.*, w.kanji, w.kana, w.romaji, w.meaning_vi, w.han_viet, w.meaning_en, w.part_of_speech, w.example_sentence, w.example_meaning_vi
       FROM favorites f
       JOIN words w ON f.word_id = w.id
       ORDER BY f.created_at DESC

@@ -77,6 +77,11 @@ export default function WordListItem({ word, onToggleFavorite }: WordListItemPro
         <div className="sm:hidden mt-1">
           <p className="text-body-md text-on-surface text-sm truncate">{word.meaning_vi}</p>
         </div>
+        {word.han_viet && (
+          <p className="mt-2 text-label-sm text-muted-foreground">
+            Hán Việt: {word.han_viet}
+          </p>
+        )}
       </div>
     </Link>
   );

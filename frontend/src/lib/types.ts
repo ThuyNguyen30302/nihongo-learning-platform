@@ -4,6 +4,7 @@ export interface Word {
   kana: string;
   romaji: string;
   meaning_vi: string;
+  han_viet?: string;
   meaning_en: string;
   part_of_speech: string;
   example_sentence: string;
