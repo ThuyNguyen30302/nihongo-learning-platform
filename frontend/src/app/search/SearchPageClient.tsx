@@ -44,7 +44,7 @@ export default function SearchPageClient() {
       }));
       setResults(wordsWithFavorites);
     } catch {
-      setError('TÃ¬m kiáº¿m tháº¥t báº¡i. Vui lÃ²ng thá»­ láº¡i.');
+      setError('Tìm kiếm thất bại. Vui lòng thử lại.');
       setResults([]);
     } finally {
       setLoading(false);
@@ -159,16 +159,16 @@ export default function SearchPageClient() {
         <section className="mb-8 max-w-[800px] mx-auto">
           <div className="text-center mb-6">
             <h1 className="font-headline-lg text-headline-lg text-on-background mb-2">
-              Tra cá»©u tá»« Ä‘iá»ƒn
+              Tra cứu từ điển
             </h1>
             <p className="text-muted-foreground text-body-md">
-              Nháº­p tá»« vá»±ng tiáº¿ng Nháº­t, Kanji hoáº·c nghÄ©a tiáº¿ng Viá»‡t
+              Nhập từ vựng tiếng Nhật, Kanji hoặc nghĩa tiếng Việt
             </p>
           </div>
           <SearchBar
             onSearch={handleSearch}
             initialValue={query}
-            placeholder="TÃ¬m kiáº¿m tá»« vá»±ng, Kanji..."
+            placeholder="Tìm kiếm từ vựng, Kanji..."
             suggestions={suggestions}
             suggestionsLoading={suggestionsLoading}
             onSuggestionSelect={handleSuggestionSelect}
@@ -195,9 +195,9 @@ export default function SearchPageClient() {
             <Card className="text-center border border-outline-variant">
               <CardContent className="p-12">
                 <Book className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-headline-md font-semibold mb-2">KhÃ´ng tÃ¬m tháº¥y káº¿t quáº£</h3>
+                <h3 className="text-headline-md font-semibold mb-2">Không tìm thấy kết quả</h3>
                 <p className="text-muted-foreground">
-                  Thá»­ tÃ¬m kiáº¿m vá»›i tá»« khÃ³a khÃ¡c hoáº·c kiá»ƒm tra chÃ­nh táº£.
+                  Thử tìm kiếm với từ khóa khác hoặc kiểm tra chính tả.
                 </p>
               </CardContent>
             </Card>
@@ -207,7 +207,7 @@ export default function SearchPageClient() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-label-md font-semibold text-muted-foreground">
-                  {results.length} káº¿t quáº£ cho â€œ{query}â€
+                  {results.length} kết quả cho “{query}”
                 </h3>
               </div>
               {results.map((word) => (
@@ -225,7 +225,7 @@ export default function SearchPageClient() {
       <footer className="border-t border-outline-variant bg-surface mt-auto">
         <div className="max-w-[1100px] mx-auto px-6 py-6">
           <p className="text-center text-sm text-muted-foreground">
-            Carrot â€” Japanese-Vietnamese Dictionary
+            Carrot — Japanese-Vietnamese Dictionary
           </p>
         </div>
       </footer>

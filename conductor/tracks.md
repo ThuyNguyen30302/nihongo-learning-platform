@@ -2,6 +2,9 @@
 
 This file tracks all major tracks for the project. Each track has its own detailed plan in its respective folder.
 
+- [ ] **Track: Fix encoding, Kanji strokes, solid header, and advanced dictionary search**
+  *Link: [./tracks/search_and_stability_20260518/](./tracks/search_and_stability_20260518/)*
+
 ---
 
 - [ ] **Track: Quy hoạch lại dự án, dọn code dư thừa và chuẩn hóa test**
