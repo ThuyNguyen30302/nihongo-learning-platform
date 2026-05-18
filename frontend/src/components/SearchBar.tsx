@@ -44,6 +44,10 @@ export default function SearchBar({
 
   useClickOutside(dropdownRef, close);
 
+  useEffect(() => {
+    setQuery(initialValue);
+  }, [initialValue]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {

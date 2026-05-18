@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, Layers, Book, Home } from 'lucide-react';
+import { Heart, Layers, Book, Home, PencilLine } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
+import HandwritingSearchPanel from '@/components/HandwritingSearchPanel';
 import SearchBar from '@/components/SearchBar';
 import WordListItem from '@/components/WordListItem';
 import { SearchType, Word } from '@/lib/types';
@@ -54,6 +55,7 @@ export default function SearchPageClient() {
 
   const [query, setQuery] = useState(initialQuery);
   const [searchType, setSearchType] = useState<SearchType>(initialType);
+  const [showHandwriting, setShowHandwriting] = useState(false);
   const [results, setResults] = useState<Word[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +154,12 @@ export default function SearchPageClient() {
     }
   };
 
+  const handleHandwritingSearch = (kanji: string) => {
+    setQuery(kanji);
+    setSearchType('kanji');
+    router.push(`/search?q=${encodeURIComponent(kanji)}&type=kanji`);
+  };
+
   const handleQueryChange = (q: string) => {
     setAutoQuery(q);
   };
@@ -236,7 +244,22 @@ export default function SearchPageClient() {
                 {mode.label}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setShowHandwriting((visible) => !visible)}
+              className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-label-md font-medium transition-colors ${
+                showHandwriting
+                  ? 'border-primary bg-primary text-on-primary'
+                  : 'border-outline-variant bg-surface text-muted-foreground hover:border-primary hover:text-primary'
+              }`}
+            >
+              <PencilLine className="h-4 w-4" />
+              Viết tay
+            </button>
           </div>
+          {showHandwriting && (
+            <HandwritingSearchPanel onSearch={handleHandwritingSearch} />
+          )}
         </section>
 
         <section className="mt-8">
