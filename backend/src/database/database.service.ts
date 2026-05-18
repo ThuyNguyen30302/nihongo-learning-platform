@@ -1,0 +1,1258 @@
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import Database from 'better-sqlite3';
+import * as path from 'path';
+
+export interface Word {
+  id: number;
+  kanji: string;
+  kana: string;
+  romaji: string;
+  meaning_vi: string;
+  meaning_en: string;
+  part_of_speech: string;
+  example_sentence: string;
+  example_meaning_vi: string;
+}
+
+export interface Kanji {
+  kanji: string;
+  meaning_vi: string;
+  meaning_en: string;
+  on_reading: string;
+  kun_reading: string;
+  stroke_count: number;
+  stroke_paths: string;
+  stroke_numbers?: string; // JSON array of {x, y} positions
+  radical?: string; // Primary radical symbol
+
+  radical_meaning?: string; // Vietnamese meaning of radical
+}
+
+export interface Favorite {
+  id: number;
+  word_id: number;
+  created_at: string;
+}
+
+@Injectable()
+export class DatabaseService implements OnModuleInit, OnModuleDestroy {
+  private db: Database.Database;
+
+  onModuleInit() {
+    const dbPath = path.join(process.cwd(), 'data', 'dictionary.db');
+    this.db = new Database(dbPath);
+    this.db.pragma('journal_mode = WAL');
+    this.initializeTables();
+    this.seedData();
+  }
+
+  onModuleDestroy() {
+    if (this.db) {
+      this.db.close();
+    }
+  }
+
+  private initializeTables() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS words (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        kanji TEXT NOT NULL,
+        kana TEXT NOT NULL,
+        romaji TEXT NOT NULL,
+        meaning_vi TEXT NOT NULL,
+        meaning_en TEXT NOT NULL,
+        part_of_speech TEXT,
+        example_sentence TEXT,
+        example_meaning_vi TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS kanji_data (
+        kanji TEXT PRIMARY KEY,
+        meaning_vi TEXT NOT NULL DEFAULT '',
+        meaning_en TEXT NOT NULL DEFAULT '',
+        on_reading TEXT,
+        kun_reading TEXT,
+        stroke_count INTEGER,
+        stroke_paths TEXT,
+        stroke_numbers TEXT,
+        radical TEXT,
+
+        radical_meaning TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        word_id INTEGER NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (word_id) REFERENCES words(id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_words_romaji ON words(romaji);
+      CREATE INDEX IF NOT EXISTS idx_words_kanji ON words(kanji);
+      CREATE INDEX IF NOT EXISTS idx_favorites_word_id ON favorites(word_id);
+    `);
+
+    // FTS5 full-text search (idempotent — won't recreate if exists)
+    this.initFTS5();
+  }
+
+  private initFTS5() {
+    const hasFts = this.db
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='words_fts'",
+      )
+      .get();
+
+    if (hasFts) return; // already set up
+
+    this.db.exec(`
+      CREATE VIRTUAL TABLE words_fts USING fts5(
+        kanji, kana, romaji, meaning_en, meaning_vi,
+        content='words', content_rowid='id',
+        tokenize='unicode61 remove_diacritics 0'
+      );
+
+      INSERT INTO words_fts(rowid, kanji, kana, romaji, meaning_en, meaning_vi)
+      SELECT id, kanji, kana, romaji, meaning_en, meaning_vi FROM words;
+
+      CREATE TRIGGER words_fts_ai AFTER INSERT ON words BEGIN
+        INSERT INTO words_fts(rowid, kanji, kana, romaji, meaning_en, meaning_vi)
+        VALUES (new.id, new.kanji, new.kana, new.romaji, new.meaning_en, new.meaning_vi);
+      END;
+
+      CREATE TRIGGER words_fts_ad AFTER DELETE ON words BEGIN
+        INSERT INTO words_fts(words_fts, rowid, kanji, kana, romaji, meaning_en, meaning_vi)
+        VALUES ('delete', old.id, old.kanji, old.kana, old.romaji, old.meaning_en, old.meaning_vi);
+      END;
+
+      CREATE TRIGGER words_fts_au AFTER UPDATE ON words BEGIN
+        INSERT INTO words_fts(words_fts, rowid, kanji, kana, romaji, meaning_en, meaning_vi)
+        VALUES ('delete', old.id, old.kanji, old.kana, old.romaji, old.meaning_en, old.meaning_vi);
+        INSERT INTO words_fts(rowid, kanji, kana, romaji, meaning_en, meaning_vi)
+        VALUES (new.id, new.kanji, new.kana, new.romaji, new.meaning_en, new.meaning_vi);
+      END;
+    `);
+  }
+
+  private seedData() {
+    const count = this.db
+      .prepare('SELECT COUNT(*) as count FROM words')
+      .get() as { count: number };
+    if (count.count > 0) return;
+
+    const sampleWords = [
+      {
+        kanji: '日本',
+        kana: 'にほん',
+        romaji: 'nihon',
+        meaning_vi: 'Nhật Bản',
+        meaning_en: 'Japan',
+        pos: 'danh từ',
+        example: '日本は美しいです。',
+        example_vi: 'Nhật Bản là đẹp.',
+      },
+      {
+        kanji: 'ありがとう',
+        kana: 'ありがとう',
+        romaji: 'arigatou',
+        meaning_vi: 'Cảm ơn',
+        meaning_en: 'Thank you',
+        pos: 'cụm từ',
+        example: 'ありがとうございます。',
+        example_vi: 'Cảm ơn (bạn).',
+      },
+      {
+        kanji: '水',
+        kana: 'みず',
+        romaji: 'mizu',
+        meaning_vi: 'Nước',
+        meaning_en: 'Water',
+        pos: 'danh từ',
+        example: '水を飲みたいです。',
+        example_vi: 'Tôi muốn uống nước.',
+      },
+      {
+        kanji: '食べる',
+        kana: 'たべる',
+        romaji: 'taberu',
+        meaning_vi: 'Ăn',
+        meaning_en: 'To eat',
+        pos: 'động từ',
+        example: 'ごはんを食べます。',
+        example_vi: 'Ăn cơm.',
+      },
+      {
+        kanji: '行く',
+        kana: 'いく',
+        romaji: 'iku',
+        meaning_vi: 'Đi',
+        meaning_en: 'To go',
+        pos: 'động từ',
+        example: '学校に行きます。',
+        example_vi: 'Đi đến trường.',
+      },
+      {
+        kanji: '本',
+        kana: 'ほん',
+        romaji: 'hon',
+        meaning_vi: 'Sách',
+        meaning_en: 'Book',
+        pos: 'danh từ',
+        example: '本を読みます。',
+        example_vi: 'Đọc sách.',
+      },
+      {
+        kanji: '犬',
+        kana: 'いぬ',
+        romaji: 'inu',
+        meaning_vi: 'Con chó',
+        meaning_en: 'Dog',
+        pos: 'danh từ',
+        example: '犬が可愛いです。',
+        example_vi: 'Con chó đáng yêu.',
+      },
+      {
+        kanji: '猫',
+        kana: 'ねこ',
+        romaji: 'neko',
+        meaning_vi: 'Con mèo',
+        meaning_en: 'Cat',
+        pos: 'danh từ',
+        example: '猫が新鮮なです。',
+        example_vi: 'Con mèo dễ thương.',
+      },
+      {
+        kanji: '山',
+        kana: 'やま',
+        romaji: 'yama',
+        meaning_vi: 'Núi',
+        meaning_en: 'Mountain',
+        pos: 'danh từ',
+        example: '山に登ります。',
+        example_vi: 'Leo núi.',
+      },
+      {
+        kanji: '海',
+        kana: 'うみ',
+        romaji: 'umi',
+        meaning_vi: 'Biển',
+        meaning_en: 'Sea',
+        pos: 'danh từ',
+        example: '海が綺麗です。',
+        example_vi: 'Biển đẹp.',
+      },
+      {
+        kanji: '花',
+        kana: 'はな',
+        romaji: 'hana',
+        meaning_vi: 'Hoa',
+        meaning_en: 'Flower',
+        pos: 'danh từ',
+        example: '花が咲いています。',
+        example_vi: 'Hoa đang nở.',
+      },
+      {
+        kanji: '車',
+        kana: 'くるま',
+        romaji: 'kuruma',
+        meaning_vi: 'Ô tô',
+        meaning_en: 'Car',
+        pos: 'danh từ',
+        example: '車で通勤します。',
+        example_vi: 'Đi làm bằng ô tô.',
+      },
+      {
+        kanji: '友達',
+        kana: 'ともだち',
+        romaji: 'tomodachi',
+        meaning_vi: 'Bạn bè',
+        meaning_en: 'Friend',
+        pos: 'danh từ',
+        example: '友達と遊びます。',
+        example_vi: 'Chơi với bạn bè.',
+      },
+      {
+        kanji: '先生',
+        kana: 'せんせい',
+        romaji: 'sensei',
+        meaning_vi: 'Giáo viên',
+        meaning_en: 'Teacher',
+        pos: 'danh từ',
+        example: '先生は優しいです。',
+        example_vi: 'Giáo viên dễ thương.',
+      },
+      {
+        kanji: '学生',
+        kana: 'がくせい',
+        romaji: 'gakusei',
+        meaning_vi: 'Học sinh',
+        meaning_en: 'Student',
+        pos: 'danh từ',
+        example: '私は学生です。',
+        example_vi: 'Tôi là học sinh.',
+      },
+      {
+        kanji: '日本語',
+        kana: 'にほんご',
+        romaji: 'nihongo',
+        meaning_vi: 'Tiếng Nhật',
+        meaning_en: 'Japanese language',
+        pos: 'danh từ',
+        example: '日本語を勉強します。',
+        example_vi: 'Học tiếng Nhật.',
+      },
+      {
+        kanji: '好き',
+        kana: 'すき',
+        romaji: 'suki',
+        meaning_vi: 'Thích',
+        meaning_en: 'Like',
+        pos: 'tính từ',
+        example: '寿司が好きです。',
+        example_vi: 'Thích ăn sushi.',
+      },
+      {
+        kanji: '嫌い',
+        kana: 'きらい',
+        romaji: 'kirai',
+        meaning_vi: 'Ghét',
+        meaning_en: 'Dislike',
+        pos: 'tính từ',
+        example: 'ピーマンが嫌いです。',
+        example_vi: 'Ghét ớt chuông.',
+      },
+      {
+        kanji: '大きい',
+        kana: 'おおきい',
+        romaji: 'ookii',
+        meaning_vi: 'Lớn',
+        meaning_en: 'Big',
+        pos: 'tính từ',
+        example: 'この家は大きいです。',
+        example_vi: 'Ngôi nhà này lớn.',
+      },
+      {
+        kanji: '小さい',
+        kana: 'ちいさい',
+        romaji: 'chiisai',
+        meaning_vi: 'Nhỏ',
+        meaning_en: 'Small',
+        pos: 'tính từ',
+        example: 'この猫は小さいです。',
+        example_vi: 'Con mèo này nhỏ.',
+      },
+      // Nature elements
+      {
+        kanji: '火',
+        kana: 'ひ',
+        romaji: 'hi',
+        meaning_vi: 'Lửa',
+        meaning_en: 'Fire',
+        pos: 'danh từ',
+        example: '火曜日に会います。',
+        example_vi: 'Gặp vào thứ Ba.',
+      },
+      {
+        kanji: '木',
+        kana: 'き',
+        romaji: 'ki',
+        meaning_vi: 'Cây',
+        meaning_en: 'Tree',
+        pos: 'danh từ',
+        example: '木の上に鳥がいます。',
+        example_vi: 'Có chim trên cây.',
+      },
+      {
+        kanji: '川',
+        kana: 'かわ',
+        romaji: 'kawa',
+        meaning_vi: 'Sông',
+        meaning_en: 'River',
+        pos: 'danh từ',
+        example: '川で魚を釣ります。',
+        example_vi: 'Câu cá ở sông.',
+      },
+      {
+        kanji: '空',
+        kana: 'そら',
+        romaji: 'sora',
+        meaning_vi: 'Bầu trời',
+        meaning_en: 'Sky',
+        pos: 'danh từ',
+        example: '空が綺麗です。',
+        example_vi: 'Bầu trời đẹp.',
+      },
+      {
+        kanji: '雨',
+        kana: 'あめ',
+        romaji: 'ame',
+        meaning_vi: 'Mưa',
+        meaning_en: 'Rain',
+        pos: 'danh từ',
+        example: '雨が降っています。',
+        example_vi: 'Trời đang mưa.',
+      },
+      {
+        kanji: '雪',
+        kana: 'ゆき',
+        romaji: 'yuki',
+        meaning_vi: 'Tuyết',
+        meaning_en: 'Snow',
+        pos: 'danh từ',
+        example: '雪が積もっています。',
+        example_vi: 'Tuyết đang堆积.',
+      },
+      {
+        kanji: '風',
+        kana: 'かぜ',
+        romaji: 'kaze',
+        meaning_vi: 'Gió',
+        meaning_en: 'Wind',
+        pos: 'danh từ',
+        example: '風が強いです。',
+        example_vi: 'Gió mạnh.',
+      },
+      {
+        kanji: '星',
+        kana: 'ほし',
+        romaji: 'hoshi',
+        meaning_vi: 'Sao',
+        meaning_en: 'Star',
+        pos: 'danh từ',
+        example: '星が綺麗です。',
+        example_vi: 'Những ngôi sao đẹp.',
+      },
+      {
+        kanji: '月',
+        kana: 'つき',
+        romaji: 'tsuki',
+        meaning_vi: 'Mặt trăng',
+        meaning_en: 'Moon',
+        pos: 'danh từ',
+        example: '月が綺麗ですね。',
+        example_vi: 'Mặt trăng đẹp nhỉ.',
+      },
+      {
+        kanji: '日',
+        kana: 'ひ',
+        romaji: 'hi',
+        meaning_vi: 'Mặt trời',
+        meaning_en: 'Sun',
+        pos: 'danh từ',
+        example: '日出が綺麗です。',
+        example_vi: 'Mặt trời mọc đẹp.',
+      },
+      // Time & numbers
+      {
+        kanji: '今日',
+        kana: 'きょう',
+        romaji: 'kyou',
+        meaning_vi: 'Hôm nay',
+        meaning_en: 'Today',
+        pos: 'danh từ',
+        example: '今日は晴れです。',
+        example_vi: 'Hôm nay trời nắng.',
+      },
+      {
+        kanji: '明日',
+        kana: 'あした',
+        romaji: 'ashita',
+        meaning_vi: 'Ngày mai',
+        meaning_en: 'Tomorrow',
+        pos: 'danh từ',
+        example: '明日会います。',
+        example_vi: 'Gặp ngày mai.',
+      },
+      {
+        kanji: '昨日',
+        kana: 'きのう',
+        romaji: 'kinou',
+        meaning_vi: 'Hôm qua',
+        meaning_en: 'Yesterday',
+        pos: 'danh từ',
+        example: '昨日映画を見ました。',
+        example_vi: 'Hôm qua xem phim.',
+      },
+      {
+        kanji: '一',
+        kana: 'いち',
+        romaji: 'ichi',
+        meaning_vi: 'Một',
+        meaning_en: 'One',
+        pos: 'số từ',
+        example: '一つください。',
+        example_vi: 'Cho tôi một cái.',
+      },
+      {
+        kanji: '二',
+        kana: 'に',
+        romaji: 'ni',
+        meaning_vi: 'Hai',
+        meaning_en: 'Two',
+        pos: 'số từ',
+        example: '二郎美味しいです。',
+        example_vi: 'Ramen Jiro ngon.',
+      },
+      {
+        kanji: '三',
+        kana: 'さん',
+        romaji: 'san',
+        meaning_vi: 'Ba',
+        meaning_en: 'Three',
+        pos: 'số từ',
+        example: '三時に会います。',
+        example_vi: 'Gặp lúc 3 giờ.',
+      },
+      {
+        kanji: '四',
+        kana: 'よん',
+        romaji: 'yon',
+        meaning_vi: 'Bốn',
+        meaning_en: 'Four',
+        pos: 'số từ',
+        example: '四月が一番綺麗です。',
+        example_vi: 'Tháng tư đẹp nhất.',
+      },
+      {
+        kanji: '五',
+        kana: 'ご',
+        romaji: 'go',
+        meaning_vi: 'Năm',
+        meaning_en: 'Five',
+        pos: 'số từ',
+        example: '五年間日本に住んでいました。',
+        example_vi: 'Sống ở Nhật 5 năm.',
+      },
+      {
+        kanji: '六',
+        kana: 'ろく',
+        romaji: 'roku',
+        meaning_vi: 'Sáu',
+        meaning_en: 'Six',
+        pos: 'số từ',
+        example: '六時に起きます。',
+        example_vi: 'Dậy lúc 6 giờ.',
+      },
+      {
+        kanji: '七',
+        kana: 'なな',
+        romaji: 'nana',
+        meaning_vi: 'Bảy',
+        meaning_en: 'Seven',
+        pos: 'số từ',
+        example: '七月は暑期です。',
+        example_vi: 'Tháng bảy là kỳ nghỉ.',
+      },
+      {
+        kanji: '八',
+        kana: 'はち',
+        romaji: 'hachi',
+        meaning_vi: 'Tám',
+        meaning_en: 'Eight',
+        pos: 'số từ',
+        example: '八幡宮に行きました。',
+        example_vi: 'Đi đến đền Hachiman.',
+      },
+      {
+        kanji: '九',
+        kana: 'きゅう',
+        romaji: 'kyuu',
+        meaning_vi: 'Chín',
+        meaning_en: 'Nine',
+        pos: 'số từ',
+        example: '九月の旅行が好きです。',
+        example_vi: 'Thích đi du lịch vào tháng 9.',
+      },
+      {
+        kanji: '十',
+        kana: 'じゅう',
+        romaji: 'juu',
+        meaning_vi: 'Mười',
+        meaning_en: 'Ten',
+        pos: 'số từ',
+        example: '十時に寝ます。',
+        example_vi: 'Ngủ lúc 10 giờ.',
+      },
+      {
+        kanji: '百',
+        kana: 'ひゃく',
+        romaji: 'hyaku',
+        meaning_vi: 'Trăm',
+        meaning_en: 'Hundred',
+        pos: 'số từ',
+        example: '三百円でした。',
+        example_vi: 'Là 300 yen.',
+      },
+      {
+        kanji: '千',
+        kana: 'せん',
+        romaji: 'sen',
+        meaning_vi: 'Nghìn',
+        meaning_en: 'Thousand',
+        pos: 'số từ',
+        example: '千年前のことです。',
+        example_vi: 'Chuyện từ 1000 năm trước.',
+      },
+      // Common verbs
+      {
+        kanji: '来る',
+        kana: 'くる',
+        romaji: 'kuru',
+        meaning_vi: 'Đến',
+        meaning_en: 'To come',
+        pos: 'động từ',
+        example: '明日来ます。',
+        example_vi: 'Ngày mai tôi sẽ đến.',
+      },
+      {
+        kanji: '見る',
+        kana: 'みる',
+        romaji: 'miru',
+        meaning_vi: 'Nhìn, Xem',
+        meaning_en: 'To see, To watch',
+        pos: 'động từ',
+        example: '映画を見ます。',
+        example_vi: 'Xem phim.',
+      },
+      {
+        kanji: '飲む',
+        kana: 'のむ',
+        romaji: 'nomu',
+        meaning_vi: 'Uống',
+        meaning_en: 'To drink',
+        pos: 'động từ',
+        example: 'コーヒーを飲みます。',
+        example_vi: 'Uống cà phê.',
+      },
+      {
+        kanji: '書く',
+        kana: 'かく',
+        romaji: 'kaku',
+        meaning_vi: 'Viết',
+        meaning_en: 'To write',
+        pos: 'động từ',
+        example: '手紙を書きます。',
+        example_vi: 'Viết thư.',
+      },
+      {
+        kanji: '読む',
+        kana: 'よむ',
+        romaji: 'yomu',
+        meaning_vi: 'Đọc',
+        meaning_en: 'To read',
+        pos: 'động từ',
+        example: '本を読みます。',
+        example_vi: 'Đọc sách.',
+      },
+      {
+        kanji: '話す',
+        kana: 'はなす',
+        romaji: 'hanasu',
+        meaning_vi: 'Nói',
+        meaning_en: 'To speak',
+        pos: 'động từ',
+        example: '日本語を話します。',
+        example_vi: 'Nói tiếng Nhật.',
+      },
+      {
+        kanji: '聞く',
+        kana: 'きく',
+        romaji: 'kiku',
+        meaning_vi: 'Nghe, Hỏi',
+        meaning_en: 'To hear, To ask',
+        pos: 'động từ',
+        example: '音楽を聞きます。',
+        example_vi: 'Nghe nhạc.',
+      },
+      {
+        kanji: '買う',
+        kana: 'かう',
+        romaji: 'kau',
+        meaning_vi: 'Mua',
+        meaning_en: 'To buy',
+        pos: 'động từ',
+        example: '野菜を買います。',
+        example_vi: 'Mua rau.',
+      },
+      {
+        kanji: '寝る',
+        kana: 'ねる',
+        romaji: 'neru',
+        meaning_vi: 'Ngủ',
+        meaning_en: 'To sleep',
+        pos: 'động từ',
+        example: '早く寝ます。',
+        example_vi: 'Đi ngủ sớm.',
+      },
+      {
+        kanji: '起きる',
+        kana: 'おきる',
+        romaji: 'okiru',
+        meaning_vi: 'Thức dậy',
+        meaning_en: 'To wake up',
+        pos: 'động từ',
+        example: '六時に起きます。',
+        example_vi: 'Dậy lúc 6 giờ.',
+      },
+      {
+        kanji: '働く',
+        kana: 'はたらく',
+        romaji: 'hataraku',
+        meaning_vi: 'Làm việc',
+        meaning_en: 'To work',
+        pos: 'động từ',
+        example: '毎日働きます。',
+        example_vi: 'Làm việc mỗi ngày.',
+      },
+      {
+        kanji: '作る',
+        kana: 'つくる',
+        romaji: 'tsukuru',
+        meaning_vi: 'Làm, Tạo',
+        meaning_en: 'To make',
+        pos: 'động từ',
+        example: '料理を作ります。',
+        example_vi: 'Nấu ăn.',
+      },
+      {
+        kanji: '思う',
+        kana: 'おもう',
+        romaji: 'omou',
+        meaning_vi: 'Nghĩ',
+        meaning_en: 'To think',
+        pos: 'động từ',
+        example: '美味しいと思います。',
+        example_vi: 'Tôi nghĩ là ngon.',
+      },
+      {
+        kanji: '分かる',
+        kana: 'わかる',
+        romaji: 'wakaru',
+        meaning_vi: 'Hiểu',
+        meaning_en: 'To understand',
+        pos: 'động từ',
+        example: '日本語が分かります。',
+        example_vi: 'Tôi hiểu tiếng Nhật.',
+      },
+      {
+        kanji: '使う',
+        kana: 'つかう',
+        romaji: 'tsukau',
+        meaning_vi: 'Sử dụng',
+        meaning_en: 'To use',
+        pos: 'động từ',
+        example: 'パソコンを使います。',
+        example_vi: 'Dùng máy tính.',
+      },
+      {
+        kanji: '待つ',
+        kana: 'まつ',
+        romaji: 'matsu',
+        meaning_vi: 'Đợi',
+        meaning_en: 'To wait',
+        pos: 'động từ',
+        example: 'ここで待ちます。',
+        example_vi: 'Đợi ở đây.',
+      },
+      {
+        kanji: '教える',
+        kana: 'おしえる',
+        romaji: 'oshieru',
+        meaning_vi: 'Dạy',
+        meaning_en: 'To teach',
+        pos: 'động từ',
+        example: '数学を教えます。',
+        example_vi: 'Dạy toán.',
+      },
+      {
+        kanji: '勉強する',
+        kana: 'べんきょうする',
+        romaji: 'benkyou suru',
+        meaning_vi: 'Học',
+        meaning_en: 'To study',
+        pos: 'động từ',
+        example: '毎日勉強します。',
+        example_vi: 'Học mỗi ngày.',
+      },
+      // Common adjectives
+      {
+        kanji: '新しい',
+        kana: 'あたらしい',
+        romaji: 'atarashii',
+        meaning_vi: 'Mới',
+        meaning_en: 'New',
+        pos: 'tính từ',
+        example: '新しい車を買いました。',
+        example_vi: 'Mua xe mới.',
+      },
+      {
+        kanji: '古い',
+        kana: 'ふるい',
+        romaji: 'furui',
+        meaning_vi: 'Cũ',
+        meaning_en: 'Old',
+        pos: 'tính từ',
+        example: '古い家です。',
+        example_vi: 'Là ngôi nhà cũ.',
+      },
+      {
+        kanji: '美味しい',
+        kana: 'おいしい',
+        romaji: 'oishii',
+        meaning_vi: 'Ngon',
+        meaning_en: 'Delicious',
+        pos: 'tính từ',
+        example: 'この寿司美味しいです。',
+        example_vi: 'Sushi này ngon.',
+      },
+      {
+        kanji: '高い',
+        kana: 'たかい',
+        romaji: 'takai',
+        meaning_vi: 'Cao, Đắt',
+        meaning_en: 'High, Expensive',
+        pos: 'tính từ',
+        example: '山が高いです。',
+        example_vi: 'Ngọn núi cao.',
+      },
+      {
+        kanji: '低い',
+        kana: 'ひくい',
+        romaji: 'hikui',
+        meaning_vi: 'Thấp',
+        meaning_en: 'Low',
+        pos: 'tính từ',
+        example: 'あのビルは低いです。',
+        example_vi: 'Tòa nhà kia thấp.',
+      },
+      {
+        kanji: '長い',
+        kana: 'ながい',
+        romaji: 'nagai',
+        meaning_vi: 'Dài',
+        meaning_en: 'Long',
+        pos: 'tính từ',
+        example: '髪が長いです。',
+        example_vi: 'Tóc dài.',
+      },
+      {
+        kanji: '短い',
+        kana: 'みじかい',
+        romaji: 'mijikai',
+        meaning_vi: 'Ngắn',
+        meaning_en: 'Short',
+        pos: 'tính từ',
+        example: '髪が短いです。',
+        example_vi: 'Tóc ngắn.',
+      },
+      {
+        kanji: '広い',
+        kana: 'ひろい',
+        romaji: 'hiroi',
+        meaning_vi: 'Rộng',
+        meaning_en: 'Wide',
+        pos: 'tính từ',
+        example: '部屋が広いです。',
+        example_vi: 'Phòng rộng.',
+      },
+      {
+        kanji: '狭い',
+        kana: 'せまい',
+        romaji: 'semai',
+        meaning_vi: 'Hẹp',
+        meaning_en: 'Narrow',
+        pos: 'tính từ',
+        example: '部屋が狭いです。',
+        example_vi: 'Phòng hẹp.',
+      },
+      {
+        kanji: '易しい',
+        kana: 'やさしい',
+        romaji: 'yasashii',
+        meaning_vi: 'Dễ',
+        meaning_en: 'Easy',
+        pos: 'tính từ',
+        example: 'この問題は易しいです。',
+        example_vi: 'Câu này dễ.',
+      },
+      // Daily life & school
+      {
+        kanji: '学校',
+        kana: 'がっこう',
+        romaji: 'gakkou',
+        meaning_vi: 'Trường học',
+        meaning_en: 'School',
+        pos: 'danh từ',
+        example: '学校に行きます。',
+        example_vi: 'Đi đến trường.',
+      },
+      {
+        kanji: '病院',
+        kana: 'びょういん',
+        romaji: 'byouin',
+        meaning_vi: 'Bệnh viện',
+        meaning_en: 'Hospital',
+        pos: 'danh từ',
+        example: '病院に行きます。',
+        example_vi: 'Đi bệnh viện.',
+      },
+      {
+        kanji: '会社',
+        kana: 'かいしゃ',
+        romaji: 'kaisha',
+        meaning_vi: 'Công ty',
+        meaning_en: 'Company',
+        pos: 'danh từ',
+        example: '会社で働いています。',
+        example_vi: 'Làm việc ở công ty.',
+      },
+      {
+        kanji: '電車',
+        kana: 'でんしゃ',
+        romaji: 'densha',
+        meaning_vi: 'Tàu điện',
+        meaning_en: 'Train',
+        pos: 'danh từ',
+        example: '電車で行きます。',
+        example_vi: 'Đi bằng tàu điện.',
+      },
+      {
+        kanji: '駅',
+        kana: 'えき',
+        romaji: 'eki',
+        meaning_vi: 'Ga (tàu)',
+        meaning_en: 'Station',
+        pos: 'danh từ',
+        example: '駅はどこですか。',
+        example_vi: 'Ga ở đâu?',
+      },
+      {
+        kanji: '電話',
+        kana: 'でんわ',
+        romaji: 'denwa',
+        meaning_vi: 'Điện thoại',
+        meaning_en: 'Telephone',
+        pos: 'danh từ',
+        example: '電話をかけます。',
+        example_vi: 'Gọi điện thoại.',
+      },
+      {
+        kanji: '時計',
+        kana: 'とけい',
+        romaji: 'tokei',
+        meaning_vi: 'Đồng hồ',
+        meaning_en: 'Clock',
+        pos: 'danh từ',
+        example: '時計を見ます。',
+        example_vi: 'Nhìn đồng hồ.',
+      },
+      {
+        kanji: '朝',
+        kana: 'あさ',
+        romaji: 'asa',
+        meaning_vi: 'Buổi sáng',
+        meaning_en: 'Morning',
+        pos: 'danh từ',
+        example: '朝ご飯を食べます。',
+        example_vi: 'Ăn sáng.',
+      },
+      {
+        kanji: '昼',
+        kana: 'ひる',
+        romaji: 'hiru',
+        meaning_vi: 'Buổi trưa',
+        meaning_en: 'Noon',
+        pos: 'danh từ',
+        example: '昼に休みます。',
+        example_vi: 'Nghỉ trưa.',
+      },
+      {
+        kanji: '夜',
+        kana: 'よる',
+        romaji: 'yoru',
+        meaning_vi: 'Buổi tối',
+        meaning_en: 'Night',
+        pos: 'danh từ',
+        example: '夜仕事します。',
+        example_vi: 'Làm việc ban đêm.',
+      },
+      {
+        kanji: '朝ご飯',
+        kana: 'あさごはん',
+        romaji: 'asagohan',
+        meaning_vi: 'Bữa sáng',
+        meaning_en: 'Breakfast',
+        pos: 'danh từ',
+        example: '朝ご飯を食べます。',
+        example_vi: 'Ăn sáng.',
+      },
+      {
+        kanji: '昼ご飯',
+        kana: 'ひるごはん',
+        romaji: 'hirugohan',
+        meaning_vi: 'Bữa trưa',
+        meaning_en: 'Lunch',
+        pos: 'danh từ',
+        example: '昼ご飯は何ですか。',
+        example_vi: 'Trưa ăn gì?',
+      },
+      {
+        kanji: '晩ご飯',
+        kana: 'ばんごはん',
+        romaji: 'bangohan',
+        meaning_vi: 'Bữa tối',
+        meaning_en: 'Dinner',
+        pos: 'danh từ',
+        example: '晩ご飯を作りません。',
+        example_vi: 'Không nấu bữa tối.',
+      },
+      {
+        kanji: 'お茶',
+        kana: 'おちゃ',
+        romaji: 'ocha',
+        meaning_vi: 'Trà',
+        meaning_en: 'Tea',
+        pos: 'danh từ',
+        example: 'お茶を飲みます。',
+        example_vi: 'Uống trà.',
+      },
+      {
+        kanji: 'コーヒー',
+        kana: 'コーヒー',
+        romaji: 'koohii',
+        meaning_vi: 'Cà phê',
+        meaning_en: 'Coffee',
+        pos: 'danh từ',
+        example: 'コーヒーをください。',
+        example_vi: 'Cho tôi một cà phê.',
+      },
+      {
+        kanji: '部屋',
+        kana: 'へや',
+        romaji: 'heya',
+        meaning_vi: 'Phòng',
+        meaning_en: 'Room',
+        pos: 'danh từ',
+        example: '部屋が綺麗です。',
+        example_vi: 'Phòng đẹp.',
+      },
+      {
+        kanji: '手紙',
+        kana: 'てがみ',
+        romaji: 'tegami',
+        meaning_vi: 'Thư',
+        meaning_en: 'Letter',
+        pos: 'danh từ',
+        example: '手紙を書きます。',
+        example_vi: 'Viết thư.',
+      },
+      {
+        kanji: '天気',
+        kana: 'てんき',
+        romaji: 'tenki',
+        meaning_vi: 'Thời tiết',
+        meaning_en: 'Weather',
+        pos: 'danh từ',
+        example: '明日の天気はどうですか。',
+        example_vi: 'Ngày mai thời tiết thế nào?',
+      },
+      {
+        kanji: '家族',
+        kana: 'かぞく',
+        romaji: 'kazoku',
+        meaning_vi: 'Gia đình',
+        meaning_en: 'Family',
+        pos: 'danh từ',
+        example: '家族は何人ですか。',
+        example_vi: 'Gia đình có mấy người?',
+      },
+      {
+        kanji: '父',
+        kana: 'ちち',
+        romaji: 'chichi',
+        meaning_vi: 'Cha',
+        meaning_en: 'Father',
+        pos: 'danh từ',
+        example: '父は教師です。',
+        example_vi: 'Cha tôi là giáo viên.',
+      },
+      {
+        kanji: '母',
+        kana: 'はは',
+        romaji: 'haha',
+        meaning_vi: 'Mẹ',
+        meaning_en: 'Mother',
+        pos: 'danh từ',
+        example: '母は料理を作ります。',
+        example_vi: 'Mẹ nấu ăn.',
+      },
+    ];
+
+    const insertWord = this.db.prepare(`
+      INSERT INTO words (kanji, kana, romaji, meaning_vi, meaning_en, part_of_speech, example_sentence, example_meaning_vi)
+      VALUES (@kanji, @kana, @romaji, @meaning_vi, @meaning_en, @pos, @example, @example_vi)
+    `);
+
+    const insertMany = this.db.transaction((words: typeof sampleWords) => {
+      for (const word of words) {
+        insertWord.run(word);
+      }
+    });
+
+    insertMany(sampleWords);
+  }
+
+  searchWords(query: string): Word[] {
+    const q = query.trim();
+    if (!q) return [];
+    const likeQ = `%${q}%`;
+    const prefixQ = `${q}%`;
+
+    // Multi-tier scoring: build union of all match strategies
+    const sql = `
+      SELECT id, MAX(score) as final_score FROM (
+        -- Tier 1: exact meaning_vi match (score 100)
+        SELECT id, 100 as score FROM words WHERE meaning_vi = ?
+        UNION ALL
+        -- Tier 2: meaning_vi prefix match (score 90)
+        SELECT id, 90 as score FROM words WHERE meaning_vi LIKE ? ESCAPE '\\'
+        UNION ALL
+        -- Tier 3: kanji exact (score 85)
+        SELECT id, 85 as score FROM words WHERE kanji = ?
+        UNION ALL
+        -- Tier 4: kana exact (score 80)
+        SELECT id, 80 as score FROM words WHERE kana = ?
+        UNION ALL
+        -- Tier 5: romaji exact (score 75)
+        SELECT id, 75 as score FROM words WHERE LOWER(romaji) = LOWER(?)
+        UNION ALL
+        -- Tier 6: meaning_vi contains (score 60)
+        SELECT id, 60 as score FROM words WHERE meaning_vi LIKE ? ESCAPE '\\'
+        UNION ALL
+        -- Tier 7: kana/kanji contains (score 50)
+        SELECT id, 50 as score FROM words WHERE kana LIKE ? ESCAPE '\\' OR kanji LIKE ? ESCAPE '\\'
+        UNION ALL
+        -- Tier 8: romaji contains (score 45)
+        SELECT id, 45 as score FROM words WHERE LOWER(romaji) LIKE LOWER(?)
+        UNION ALL
+        -- Tier 9: FTS5 full-text (score 20)
+        SELECT w.id, 20 as score FROM words w
+        JOIN words_fts f ON w.id = f.rowid
+        WHERE words_fts MATCH ?
+      )
+      GROUP BY id
+      ORDER BY final_score DESC, id ASC
+      LIMIT 50
+    `;
+
+    // Build FTS5 query: quote each term for phrase matching
+    const terms = q
+      .replace(/['"*^()]/g, '')
+      .split(/\s+/)
+      .filter((t) => t.length > 0);
+    const ftsQuery = terms.map((t) => `"${t}"`).join(' ');
+
+    try {
+      const rows = this.db.prepare(sql).all(
+        q, // exact meaning_vi
+        prefixQ, // meaning_vi prefix
+        q, // kanji exact
+        q, // kana exact
+        q, // romaji exact
+        likeQ, // meaning_vi contains
+        likeQ,
+        likeQ, // kana/kanji contains
+        likeQ, // romaji contains
+        ftsQuery,
+      ) as { id: number; final_score: number }[];
+
+      if (rows.length === 0) return [];
+
+      // Fetch full word data for matched IDs in score order
+      const ids = rows.map((r) => r.id);
+      const placeholders = ids.map(() => '?').join(',');
+      const words = this.db
+        .prepare(`SELECT * FROM words WHERE id IN (${placeholders})`)
+        .all(...ids) as Word[];
+
+      // Re-sort by score order
+      const idOrder = new Map(ids.map((id, i) => [id, i]));
+      words.sort(
+        (a, b) => (idOrder.get(a.id) ?? 99) - (idOrder.get(b.id) ?? 99),
+      );
+
+      return words;
+    } catch {
+      // Fallback: simple LIKE search
+      return this.db
+        .prepare(
+          `
+        SELECT * FROM words
+        WHERE meaning_vi LIKE ? OR kana LIKE ? OR kanji LIKE ? OR LOWER(romaji) LIKE LOWER(?)
+        LIMIT 50
+      `,
+        )
+        .all(likeQ, likeQ, likeQ, likeQ) as Word[];
+    }
+  }
+
+  getWordById(id: number): Word | undefined {
+    return this.db.prepare('SELECT * FROM words WHERE id = ?').get(id) as
+      | Word
+      | undefined;
+  }
+
+  getKanji(kanji: string): Kanji | undefined {
+    return this.db
+      .prepare('SELECT * FROM kanji_data WHERE kanji = ?')
+      .get(kanji) as Kanji | undefined;
+  }
+
+  getAllKanji(): Kanji[] {
+    return this.db.prepare('SELECT * FROM kanji_data').all() as Kanji[];
+  }
+
+  getFavorites(): (Favorite & { word: Word })[] {
+    return this.db
+      .prepare(
+        `
+      SELECT f.*, w.kanji, w.kana, w.romaji, w.meaning_vi, w.meaning_en, w.part_of_speech, w.example_sentence, w.example_meaning_vi
+      FROM favorites f
+      JOIN words w ON f.word_id = w.id
+      ORDER BY f.created_at DESC
+    `,
+      )
+      .all() as (Favorite & { word: Word })[];
+  }
+
+  addFavorite(wordId: number): Favorite {
+    const existing = this.db
+      .prepare('SELECT * FROM favorites WHERE word_id = ?')
+      .get(wordId);
+    if (existing) {
+      return existing as Favorite;
+    }
+    const result = this.db
+      .prepare('INSERT INTO favorites (word_id) VALUES (?)')
+      .run(wordId);
+    return {
+      id: result.lastInsertRowid as number,
+      word_id: wordId,
+      created_at: new Date().toISOString(),
+    };
+  }
+
+  removeFavorite(wordId: number): boolean {
+    const result = this.db
+      .prepare('DELETE FROM favorites WHERE word_id = ?')
+      .run(wordId);
+    return result.changes > 0;
+  }
+
+  isFavorite(wordId: number): boolean {
+    const result = this.db
+      .prepare('SELECT id FROM favorites WHERE word_id = ?')
+      .get(wordId);
+    return !!result;
+  }
+}

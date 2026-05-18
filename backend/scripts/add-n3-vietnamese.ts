@@ -1,0 +1,300 @@
+/**
+ * add-n3-vietnamese.ts
+ *
+ * Curated N3 vocabulary → update words.meaning_vi
+ * No LIKE matching — exact (kanji+kana) or kana-only only.
+ *
+ * Usage:  npx ts-node scripts/add-n3-vietnamese.ts
+ */
+
+import Database from 'better-sqlite3';
+import * as path from 'path';
+
+const WORDS: { kana: string; kanji?: string; meaning_vi: string }[] = [
+  // ── Verbs ──
+  { kana: 'あきらめる', kanji: '諦める', meaning_vi: 'Từ bỏ, Bỏ cuộc' },
+  { kana: 'あこがれる', kanji: '憧れる', meaning_vi: 'Ngưỡng mộ, Khao khát' },
+  { kana: 'あらわす', kanji: '表す', meaning_vi: 'Biểu thị, Thể hiện' },
+  { kana: 'あらわれる', kanji: '現れる', meaning_vi: 'Xuất hiện' },
+  { kana: 'いかす', kanji: '生かす', meaning_vi: 'Tận dụng, Phát huy' },
+  { kana: 'いじめる', meaning_vi: 'Bắt nạt' },
+  { kana: 'うたがう', kanji: '疑う', meaning_vi: 'Nghi ngờ' },
+  { kana: 'うつ', kanji: '打つ', meaning_vi: 'Đánh, Gõ (máy tính)' },
+  { kana: 'うつる', kanji: '移る', meaning_vi: 'Di chuyển, Lây (bệnh)' },
+  { kana: 'うばう', kanji: '奪う', meaning_vi: 'Cướp, Giành lấy' },
+  { kana: 'えらぶ', kanji: '選ぶ', meaning_vi: 'Chọn, Lựa chọn' },
+  { kana: 'おいかける', kanji: '追いかける', meaning_vi: 'Đuổi theo' },
+  { kana: 'おこなう', kanji: '行う', meaning_vi: 'Thực hiện, Tiến hành' },
+  { kana: 'おどろく', kanji: '驚く', meaning_vi: 'Ngạc nhiên, Kinh ngạc' },
+  { kana: 'おもいだす', kanji: '思い出す', meaning_vi: 'Nhớ lại, Hồi tưởng' },
+  { kana: 'およぼす', kanji: '及ぼす', meaning_vi: 'Ảnh hưởng, Gây ra' },
+  { kana: 'かがやく', kanji: '輝く', meaning_vi: 'Tỏa sáng, Lấp lánh' },
+  { kana: 'かくす', kanji: '隠す', meaning_vi: 'Giấu, Che giấu' },
+  { kana: 'かこむ', kanji: '囲む', meaning_vi: 'Bao quanh, Vây quanh' },
+  { kana: 'かさなる', kanji: '重なる', meaning_vi: 'Chồng lên, Trùng lặp' },
+  { kana: 'かたむく', kanji: '傾く', meaning_vi: 'Nghiêng, Dốc' },
+  { kana: 'かなう', kanji: '叶う', meaning_vi: 'Thành hiện thực (ước mơ)' },
+  { kana: 'かんじる', kanji: '感じる', meaning_vi: 'Cảm thấy, Cảm nhận' },
+  { kana: 'くばる', kanji: '配る', meaning_vi: 'Phân phát, Phân phối' },
+  { kana: 'こたえる', kanji: '答える', meaning_vi: 'Trả lời, Đáp lại' },
+  { kana: 'ことわる', kanji: '断る', meaning_vi: 'Từ chối' },
+  { kana: 'こめる', kanji: '込める', meaning_vi: 'Đặt vào, Gửi gắm (tình cảm)' },
+  { kana: 'ささえる', kanji: '支える', meaning_vi: 'Hỗ trợ, Chống đỡ' },
+  { kana: 'さわぐ', kanji: '騒ぐ', meaning_vi: 'Làm ồn, Ồn ào' },
+  { kana: 'しめる', kanji: '占める', meaning_vi: 'Chiếm (tỉ lệ)' },
+  { kana: 'すごす', kanji: '過ごす', meaning_vi: 'Trải qua, Sống (thời gian)' },
+  { kana: 'すすむ', kanji: '進む', meaning_vi: 'Tiến lên, Tiến bộ' },
+  { kana: 'すすめる', kanji: '勧める', meaning_vi: 'Khuyến khích, Đề xuất' },
+  { kana: 'たえる', kanji: '耐える', meaning_vi: 'Chịu đựng' },
+  { kana: 'たしかめる', kanji: '確かめる', meaning_vi: 'Xác nhận, Kiểm tra' },
+  { kana: 'たすける', kanji: '助ける', meaning_vi: 'Giúp đỡ, Cứu giúp' },
+  { kana: 'たずねる', kanji: '訪ねる', meaning_vi: 'Thăm, Ghé thăm' },
+  { kana: 'ちこくする', kanji: '遅刻する', meaning_vi: 'Đến muộn, Trễ giờ' },
+  { kana: 'つかまる', kanji: '捕まる', meaning_vi: 'Bị bắt (tự động)' },
+  { kana: 'つかまえる', kanji: '捕まえる', meaning_vi: 'Bắt (chủ động)' },
+  { kana: 'つく', kanji: '着く', meaning_vi: 'Đến nơi' },
+  { kana: 'つたえる', kanji: '伝える', meaning_vi: 'Truyền đạt, Thông báo' },
+  { kana: 'つとめる', kanji: '勤める', meaning_vi: 'Làm việc (ở công ty)' },
+  { kana: 'つむ', kanji: '積む', meaning_vi: 'Chất, Xếp, Tích lũy' },
+  { kana: 'つれる', kanji: '釣れる', meaning_vi: 'Câu được (cá)' },
+  { kana: 'とどく', kanji: '届く', meaning_vi: 'Đến, Giao đến (tự động)' },
+  { kana: 'とどける', kanji: '届ける', meaning_vi: 'Giao, Gửi đến (chủ động)' },
+  { kana: 'とまる', kanji: '泊まる', meaning_vi: 'Ở lại qua đêm, Nghỉ đêm' },
+  { kana: 'ながめる', kanji: '眺める', meaning_vi: 'Ngắm nhìn' },
+  { kana: 'なぐる', kanji: '殴る', meaning_vi: 'Đấm, Đánh' },
+  { kana: 'なやむ', kanji: '悩む', meaning_vi: 'Lo lắng, Phiền muộn' },
+  { kana: 'にあう', kanji: '似合う', meaning_vi: 'Hợp, Phù hợp' },
+  { kana: 'にる', kanji: '似る', meaning_vi: 'Giống' },
+  { kana: 'ぬすむ', kanji: '盗む', meaning_vi: 'Ăn trộm, Đánh cắp' },
+  { kana: 'のこる', kanji: '残る', meaning_vi: 'Còn lại, Sót lại' },
+  { kana: 'のばす', kanji: '伸ばす', meaning_vi: 'Kéo dài, Duỗi ra' },
+  { kana: 'はえる', kanji: '生える', meaning_vi: 'Mọc (tự nhiên)' },
+  { kana: 'はこぶ', kanji: '運ぶ', meaning_vi: 'Vận chuyển, Mang' },
+  { kana: 'はさむ', kanji: '挟む', meaning_vi: 'Kẹp, Chen vào giữa' },
+  { kana: 'はっきりする', meaning_vi: 'Rõ ràng, Dứt khoát' },
+  { kana: 'はなれる', kanji: '離れる', meaning_vi: 'Rời xa, Tách ra' },
+  { kana: 'ひやす', kanji: '冷やす', meaning_vi: 'Làm lạnh, Ướp lạnh' },
+  { kana: 'ふく', kanji: '吹く', meaning_vi: 'Thổi' },
+  { kana: 'ふくむ', kanji: '含む', meaning_vi: 'Bao gồm, Chứa đựng' },
+  { kana: 'へる', kanji: '減る', meaning_vi: 'Giảm, Bớt đi' },
+  { kana: 'ほめる', kanji: '褒める', meaning_vi: 'Khen ngợi' },
+  { kana: 'まく', kanji: '巻く', meaning_vi: 'Cuộn, Quấn' },
+  { kana: 'まざる', kanji: '混ざる', meaning_vi: 'Trộn lẫn (tự động)' },
+  { kana: 'まぜる', kanji: '混ぜる', meaning_vi: 'Trộn (chủ động)' },
+  { kana: 'まとめる', meaning_vi: 'Tổng hợp, Gom lại' },
+  { kana: 'みとめる', kanji: '認める', meaning_vi: 'Công nhận, Thừa nhận' },
+  { kana: 'もやす', kanji: '燃やす', meaning_vi: 'Đốt cháy (chủ động)' },
+  { kana: 'もどす', kanji: '戻す', meaning_vi: 'Trả lại, Đặt lại chỗ cũ' },
+  { kana: 'やくす', kanji: '訳す', meaning_vi: 'Dịch' },
+  { kana: 'ゆずる', kanji: '譲る', meaning_vi: 'Nhường, Chuyển nhượng' },
+  { kana: 'よぶ', kanji: '呼ぶ', meaning_vi: 'Gọi, Mời' },
+
+  // ── Suru-verbs ──
+  { kana: 'いらいする', kanji: '依頼する', meaning_vi: 'Yêu cầu, Nhờ vả' },
+  { kana: 'うんどうする', kanji: '運動する', meaning_vi: 'Vận động, Tập thể dục' },
+  { kana: 'えいきょうする', kanji: '影響する', meaning_vi: 'Ảnh hưởng' },
+  { kana: 'かつやくする', kanji: '活躍する', meaning_vi: 'Hoạt động tích cực, Nổi bật' },
+  { kana: 'きょうそうする', kanji: '競争する', meaning_vi: 'Cạnh tranh' },
+  { kana: 'くろうする', kanji: '苦労する', meaning_vi: 'Vất vả, Khổ cực' },
+  { kana: 'しゅうちゅうする', kanji: '集中する', meaning_vi: 'Tập trung' },
+  { kana: 'しょうたいする', kanji: '招待する', meaning_vi: 'Mời (sự kiện)' },
+  { kana: 'しんぽする', kanji: '進歩する', meaning_vi: 'Tiến bộ' },
+  { kana: 'そうぞうする', kanji: '想像する', meaning_vi: 'Tưởng tượng' },
+  { kana: 'そんけいする', kanji: '尊敬する', meaning_vi: 'Tôn trọng, Kính trọng' },
+  { kana: 'たいかいする', kanji: '退会する', meaning_vi: 'Rời khỏi hội/nhóm' },
+  { kana: 'とうじょうする', kanji: '登場する', meaning_vi: 'Xuất hiện, Ra mắt' },
+  { kana: 'はんたいする', kanji: '反対する', meaning_vi: 'Phản đối' },
+  { kana: 'ひはんする', kanji: '批判する', meaning_vi: 'Phê phán, Chỉ trích' },
+  { kana: 'ふせぐ', kanji: '防ぐ', meaning_vi: 'Phòng ngừa, Ngăn chặn' },
+  { kana: 'へんかする', kanji: '変化する', meaning_vi: 'Biến đổi, Thay đổi' },
+  { kana: 'まんぞくする', kanji: '満足する', meaning_vi: 'Hài lòng, Thỏa mãn' },
+  { kana: 'やくそくする', kanji: '約束する', meaning_vi: 'Hứa, Hẹn' },
+
+  // ── い Adjectives ──
+  { kana: 'あらあらしい', kanji: '荒々しい', meaning_vi: 'Thô bạo, Dữ dội' },
+  { kana: 'いさましい', kanji: '勇ましい', meaning_vi: 'Dũng cảm, Can đảm' },
+  { kana: 'うらやましい', kanji: '羨ましい', meaning_vi: 'Ghen tị, Thèm muốn' },
+  { kana: 'おとなしい', meaning_vi: 'Ngoan ngoãn, Hiền lành' },
+  { kana: 'かゆい', meaning_vi: 'Ngứa' },
+  { kana: 'くわしい', kanji: '詳しい', meaning_vi: 'Chi tiết, Am hiểu' },
+  { kana: 'けわしい', kanji: '険しい', meaning_vi: 'Dốc đứng, Gay go' },
+  { kana: 'こいしい', kanji: '恋しい', meaning_vi: 'Nhớ nhung, Thương nhớ' },
+  { kana: 'さわがしい', kanji: '騒がしい', meaning_vi: 'Ồn ào, Huyên náo' },
+  { kana: 'したしい', kanji: '親しい', meaning_vi: 'Thân thiết, Gần gũi' },
+  { kana: 'するどい', kanji: '鋭い', meaning_vi: 'Sắc bén, Nhạy bén' },
+  { kana: 'たのもしい', kanji: '頼もしい', meaning_vi: 'Đáng tin cậy' },
+  { kana: 'にくい', kanji: '憎い', meaning_vi: 'Đáng ghét, Ghét' },
+  { kana: 'ひとしい', kanji: '等しい', meaning_vi: 'Bằng nhau, Tương đương' },
+  { kana: 'まぶしい', kanji: '眩しい', meaning_vi: 'Chói mắt, Lóa mắt' },
+
+  // ── な Adjectives ──
+  { kana: 'いろいろ', meaning_vi: 'Đa dạng, Nhiều loại' },
+  { kana: 'かって', kanji: '勝手', meaning_vi: 'Tùy tiện, Tự ý' },
+  { kana: 'きちんと', meaning_vi: 'Ngăn nắp, Đúng giờ, Chuẩn chỉ' },
+  { kana: 'きのどく', kanji: '気の毒', meaning_vi: 'Đáng thương, Tội nghiệp' },
+  { kana: 'きゅう', kanji: '急', meaning_vi: 'Gấp, Đột ngột' },
+  { kana: 'けち', meaning_vi: 'Keo kiệt, Bủn xỉn' },
+  { kana: 'さかん', kanji: '盛ん', meaning_vi: 'Thịnh hành, Sôi nổi' },
+  { kana: 'じみ', kanji: '地味', meaning_vi: 'Giản dị, Mộc mạc, Trầm' },
+  { kana: 'すてき', kanji: '素敵', meaning_vi: 'Tuyệt vời, Đẹp đẽ' },
+  { kana: 'そっくり', meaning_vi: 'Giống y hệt' },
+  { kana: 'だらしない', meaning_vi: 'Luộm thuộm, Không gọn gàng' },
+  { kana: 'とくべつ', kanji: '特別', meaning_vi: 'Đặc biệt' },
+  { kana: 'なっとく', kanji: '納得', meaning_vi: 'Đồng ý, Chấp nhận' },
+  { kana: 'のんき', kanji: '呑気', meaning_vi: 'Vô tư, Thư thái, Thong thả' },
+  { kana: 'ひきょう', kanji: '卑怯', meaning_vi: 'Hèn nhát, Không công bằng' },
+  { kana: 'びんぼう', kanji: '貧乏', meaning_vi: 'Nghèo khó, Túng thiếu' },
+  { kana: 'ふしぎ', kanji: '不思議', meaning_vi: 'Kỳ lạ, Bí ẩn, Huyền bí' },
+  { kana: 'ふまん', kanji: '不満', meaning_vi: 'Bất mãn, Không hài lòng' },
+  { kana: 'ほんとう', kanji: '本当', meaning_vi: 'Thật sự, Đúng sự thật' },
+  { kana: 'むちゃ', kanji: '無茶', meaning_vi: 'Vô lý, Quá đáng' },
+  { kana: 'ゆたか', kanji: '豊か', meaning_vi: 'Phong phú, Giàu có' },
+
+  // ── Nouns: Society & Life ──
+  { kana: 'せいき', kanji: '世紀', meaning_vi: 'Thế kỷ' },
+  { kana: 'せいねん', kanji: '青年', meaning_vi: 'Thanh niên' },
+  { kana: 'せいふ', kanji: '政府', meaning_vi: 'Chính phủ' },
+  { kana: 'せかい', kanji: '世界', meaning_vi: 'Thế giới' },
+  { kana: 'じだい', kanji: '時代', meaning_vi: 'Thời đại' },
+  { kana: 'こくみん', kanji: '国民', meaning_vi: 'Người dân, Quốc dân' },
+  { kana: 'きぎょう', kanji: '企業', meaning_vi: 'Doanh nghiệp' },
+  { kana: 'こうくう', kanji: '航空', meaning_vi: 'Hàng không' },
+  { kana: 'じょうけん', kanji: '条件', meaning_vi: 'Điều kiện' },
+  { kana: 'せいど', kanji: '制度', meaning_vi: 'Chế độ, Hệ thống' },
+  { kana: 'どりょく', kanji: '努力', meaning_vi: 'Nỗ lực, Cố gắng' },
+  { kana: 'りゆう', kanji: '理由', meaning_vi: 'Lý do' },
+  { kana: 'げんいん', kanji: '原因', meaning_vi: 'Nguyên nhân' },
+  { kana: 'けっか', kanji: '結果', meaning_vi: 'Kết quả' },
+  { kana: 'こうか', kanji: '効果', meaning_vi: 'Hiệu quả' },
+  { kana: 'はってん', kanji: '発展', meaning_vi: 'Phát triển' },
+  { kana: 'ぞうか', kanji: '増加', meaning_vi: 'Sự gia tăng' },
+  { kana: 'げんしょう', kanji: '減少', meaning_vi: 'Sự giảm thiểu' },
+  { kana: 'じつげん', kanji: '実現', meaning_vi: 'Sự thực hiện, Hiện thực hóa' },
+  { kana: 'かいぜん', kanji: '改善', meaning_vi: 'Cải thiện' },
+  { kana: 'かいけつ', kanji: '解決', meaning_vi: 'Giải quyết' },
+  { kana: 'かいはつ', kanji: '開発', meaning_vi: 'Phát triển, Khai thác' },
+  { kana: 'ちょうさ', kanji: '調査', meaning_vi: 'Điều tra, Khảo sát' },
+  { kana: 'けんきゅう', kanji: '研究', meaning_vi: 'Nghiên cứu' },
+  { kana: 'はんのう', kanji: '反応', meaning_vi: 'Phản ứng' },
+  { kana: 'つうやく', kanji: '通訳', meaning_vi: 'Phiên dịch, Thông dịch' },
+  { kana: 'しょうひん', kanji: '商品', meaning_vi: 'Sản phẩm, Hàng hóa' },
+  { kana: 'せいひん', kanji: '製品', meaning_vi: 'Sản phẩm (sản xuất)' },
+  { kana: 'ひんしつ', kanji: '品質', meaning_vi: 'Chất lượng' },
+  { kana: 'ぎじゅつ', kanji: '技術', meaning_vi: 'Kỹ thuật, Công nghệ' },
+  { kana: 'のうぎょう', kanji: '農業', meaning_vi: 'Nông nghiệp' },
+  { kana: 'こうぎょう', kanji: '工業', meaning_vi: 'Công nghiệp' },
+  { kana: 'しょうか', kanji: '消化', meaning_vi: 'Tiêu hóa' },
+  { kana: 'えいよう', kanji: '栄養', meaning_vi: 'Dinh dưỡng' },
+  { kana: 'かんじゃ', kanji: '患者', meaning_vi: 'Bệnh nhân' },
+  { kana: 'しゅじゅつ', kanji: '手術', meaning_vi: 'Phẫu thuật' },
+  { kana: 'ちりょう', kanji: '治療', meaning_vi: 'Điều trị' },
+
+  // ── Nouns: Daily & Abstract ──
+  { kana: 'かがく', kanji: '科学', meaning_vi: 'Khoa học' },
+  { kana: 'うちゅう', kanji: '宇宙', meaning_vi: 'Vũ trụ' },
+  { kana: 'しぜん', kanji: '自然', meaning_vi: 'Tự nhiên, Thiên nhiên' },
+  { kana: 'ちきゅう', kanji: '地球', meaning_vi: 'Trái đất' },
+  { kana: 'じしん', kanji: '地震', meaning_vi: 'Động đất' },
+  { kana: 'さいがい', kanji: '災害', meaning_vi: 'Thiên tai, Thảm họa' },
+  { kana: 'のうりょく', kanji: '能力', meaning_vi: 'Năng lực, Khả năng' },
+  { kana: 'さいのう', kanji: '才能', meaning_vi: 'Tài năng' },
+  { kana: 'きおく', kanji: '記憶', meaning_vi: 'Ký ức, Trí nhớ' },
+  { kana: 'ちしき', kanji: '知識', meaning_vi: 'Kiến thức' },
+  { kana: 'じょうほう', kanji: '情報', meaning_vi: 'Thông tin' },
+  { kana: 'そうぞう', kanji: '想像', meaning_vi: 'Sự tưởng tượng' },
+  { kana: 'こうどう', kanji: '行動', meaning_vi: 'Hành động' },
+  { kana: 'たいど', kanji: '態度', meaning_vi: 'Thái độ' },
+  { kana: 'かんしん', kanji: '関心', meaning_vi: 'Sự quan tâm' },
+  { kana: 'きかい', kanji: '機会', meaning_vi: 'Cơ hội' },
+  { kana: 'しゅだん', kanji: '手段', meaning_vi: 'Phương tiện, Cách thức' },
+  { kana: 'もくてき', kanji: '目的', meaning_vi: 'Mục đích' },
+  { kana: 'しゅちょう', kanji: '主張', meaning_vi: 'Lập trường, Quan điểm' },
+  { kana: 'りかい', kanji: '理解', meaning_vi: 'Sự hiểu biết, Lý giải' },
+
+  // ── Adverbs & Expressions ──
+  { kana: 'あっというまに', kanji: 'あっという間に', meaning_vi: 'Trong chớp mắt' },
+  { kana: 'いつのまにか', kanji: 'いつの間にか', meaning_vi: 'Lúc nào không hay' },
+  { kana: 'おそらく', meaning_vi: 'Có lẽ (trang trọng)' },
+  { kana: 'おもいきって', kanji: '思い切って', meaning_vi: 'Mạnh dạn, Quyết tâm' },
+  { kana: 'かわりに', kanji: '代わりに', meaning_vi: 'Thay vì, Đổi lại' },
+  { kana: 'ぐっすり', meaning_vi: 'Ngủ say' },
+  { kana: 'さすが', meaning_vi: 'Quả nhiên, Đúng là' },
+  { kana: 'さっぱり', meaning_vi: 'Hoàn toàn (phủ định), Sảng khoái' },
+  { kana: 'じっさい', kanji: '実際', meaning_vi: 'Thực tế, Thật ra' },
+  { kana: 'すっきり', meaning_vi: 'Thoải mái, Dễ chịu, Gọn gàng' },
+  { kana: 'せっかく', meaning_vi: 'Đã mất công, Đã cố gắng' },
+  { kana: 'たとえ', meaning_vi: 'Dù cho, Ngay cả khi' },
+  { kana: 'つまり', meaning_vi: 'Tóm lại, Nghĩa là' },
+  { kana: 'できるだけ', meaning_vi: 'Càng nhiều càng tốt, Hết sức' },
+  { kana: 'とにかく', meaning_vi: 'Dù sao thì, Tóm lại' },
+  { kana: 'とんでもない', meaning_vi: 'Không thể nào, Không đời nào, Thật vô lý' },
+  { kana: 'なにより', kanji: '何より', meaning_vi: 'Trên hết, Hơn bất cứ điều gì' },
+  { kana: 'にっこり', meaning_vi: 'Cười tươi, Mỉm cười' },
+  { kana: 'のんびり', meaning_vi: 'Thư thái, Thoải mái' },
+  { kana: 'ばったり', meaning_vi: 'Tình cờ gặp, Đột ngột' },
+  { kana: 'はっきり', meaning_vi: 'Rõ ràng, Rành mạch' },
+  { kana: 'びっくり', meaning_vi: 'Giật mình, Ngạc nhiên' },
+  { kana: 'ふと', meaning_vi: 'Vô tình, Bất chợt' },
+  { kana: 'ほとんど', meaning_vi: 'Hầu hết, Gần như' },
+  { kana: 'まさか', meaning_vi: 'Không thể nào, Chẳng lẽ' },
+  { kana: 'まるで', meaning_vi: 'Cứ như là, Y hệt như' },
+  { kana: 'めったに', kanji: '滅多に', meaning_vi: 'Hiếm khi (dùng với phủ định)' },
+  { kana: 'やがて', meaning_vi: 'Chẳng bao lâu, Rồi thì' },
+  { kana: 'ようやく', meaning_vi: 'Cuối cùng thì, Mãi mới' },
+  { kana: 'わざと', meaning_vi: 'Cố ý, Cố tình' },
+
+  // ── More Verbs ──
+  { kana: 'あわてる', kanji: '慌てる', meaning_vi: 'Hoảng hốt, Cuống quýt' },
+  { kana: 'うける', kanji: '受ける', meaning_vi: 'Nhận, Chấp nhận, Thi (bài kiểm tra)' },
+  { kana: 'うつす', kanji: '写す', meaning_vi: 'Chụp ảnh, Sao chép' },
+  { kana: 'かわいがる', meaning_vi: 'Yêu thương, Cưng chiều' },
+  { kana: 'きづく', kanji: '気付く', meaning_vi: 'Nhận ra, Chú ý' },
+  { kana: 'くっつく', meaning_vi: 'Dính vào, Bám vào' },
+  { kana: 'くっつける', meaning_vi: 'Gắn, Dán vào (chủ động)' },
+  { kana: 'こぼす', meaning_vi: 'Làm đổ (chất lỏng)' },
+  { kana: 'こぼれる', meaning_vi: 'Tràn ra, Đổ ra (tự động)' },
+  { kana: 'しかる', kanji: '叱る', meaning_vi: 'La mắng, Quở trách' },
+  { kana: 'しゃべる', meaning_vi: 'Nói chuyện, Tán gẫu' },
+  { kana: 'すべる', kanji: '滑る', meaning_vi: 'Trượt' },
+  { kana: 'せっきょくてき', kanji: '積極的', meaning_vi: 'Tích cực, Chủ động' },
+  { kana: 'そうだんする', kanji: '相談する', meaning_vi: 'Bàn bạc, Tư vấn' },
+  { kana: 'たる', kanji: '足る', meaning_vi: 'Đủ' },
+  { kana: 'ちゅうもんする', kanji: '注文する', meaning_vi: 'Đặt hàng, Gọi món' },
+  { kana: 'つまる', kanji: '詰まる', meaning_vi: 'Bị tắc, Bị kẹt (tự động)' },
+  { kana: 'にごる', kanji: '濁る', meaning_vi: 'Đục, Vẩn đục' },
+  { kana: 'のこす', kanji: '残す', meaning_vi: 'Để lại' },
+  { kana: 'はかる', kanji: '計る', meaning_vi: 'Đo lường' },
+  { kana: 'はなす', kanji: '放す', meaning_vi: 'Thả, Buông ra' },
+  { kana: 'ひびく', kanji: '響く', meaning_vi: 'Vang vọng, Ảnh hưởng' },
+  { kana: 'まねる', kanji: '真似る', meaning_vi: 'Bắt chước' },
+];
+
+function main() {
+  const dbPath = path.join(path.resolve(__dirname, '..'), 'data', 'dictionary.db');
+  console.log(`Adding Vietnamese meanings for ${WORDS.length} N3 words...`);
+  const db = new Database(dbPath);
+  db.pragma('journal_mode = WAL');
+
+  const matchExact = db.prepare("UPDATE words SET meaning_vi = ? WHERE kana = ? AND kanji = ? AND meaning_vi = ''");
+  const matchKana = db.prepare("UPDATE words SET meaning_vi = ? WHERE kana = ? AND meaning_vi = ''");
+
+  let exact = 0, kanaOnly = 0, noMatch = 0;
+
+  db.transaction(() => {
+    for (const w of WORDS) {
+      if (w.kanji) {
+        const r = matchExact.run(w.meaning_vi, w.kana, w.kanji);
+        if (r.changes > 0) { exact++; continue; }
+      }
+      const r2 = matchKana.run(w.meaning_vi, w.kana);
+      if (r2.changes > 0) { kanaOnly++; continue; }
+      noMatch++;
+    }
+  })();
+
+  console.log(`Exact: ${exact} | Kana: ${kanaOnly} | No match: ${noMatch}`);
+  const s = db.prepare("SELECT SUM(CASE WHEN meaning_vi != '' THEN 1 ELSE 0 END) as c FROM words").get() as { c: number };
+  console.log(`Total words with Vietnamese: ${s.c}`);
+  db.close();
+}
+main();

@@ -1,0 +1,68 @@
+import { Injectable } from '@nestjs/common';
+import { DatabaseService, Kanji } from '../database/database.service';
+
+export interface StrokeNumber {
+  x: number;
+  y: number;
+}
+
+export interface KanjiResponse {
+  kanji: string;
+  meaning_vi: string;
+  meaning_en: string;
+  on_reading: string;
+  kun_reading: string;
+  stroke_count: number;
+  strokes: string[];
+  stroke_numbers: StrokeNumber[];
+  radical?: string;
+
+  radical_meaning?: string;
+}
+
+@Injectable()
+export class KanjiService {
+  constructor(private readonly databaseService: DatabaseService) {}
+
+  getKanji(kanji: string): KanjiResponse | undefined {
+    const kanjiData = this.databaseService.getKanji(kanji);
+    if (!kanjiData) {
+      return undefined;
+    }
+    return this.parseKanjiData(kanjiData);
+  }
+
+  getAllKanji(): KanjiResponse[] {
+    const allKanji = this.databaseService.getAllKanji();
+    return allKanji.map((k) => this.parseKanjiData(k));
+  }
+
+  private parseKanjiData(kanjiData: Kanji): KanjiResponse {
+    const strokes = kanjiData.stroke_paths
+      ? kanjiData.stroke_paths.split('||')
+      : [];
+
+    let stroke_numbers: StrokeNumber[] = [];
+    if (kanjiData.stroke_numbers) {
+      try {
+        stroke_numbers = JSON.parse(kanjiData.stroke_numbers) as StrokeNumber[];
+      } catch {
+        stroke_numbers = [];
+      }
+    }
+
+    return {
+      kanji: kanjiData.kanji,
+      meaning_vi: kanjiData.meaning_vi,
+      meaning_en: kanjiData.meaning_en,
+      on_reading: kanjiData.on_reading || '',
+      kun_reading: kanjiData.kun_reading || '',
+      stroke_count: kanjiData.stroke_count || 0,
+      strokes,
+      stroke_numbers,
+      radical: kanjiData.radical,
+
+      radical_meaning: kanjiData.radical_meaning,
+    };
+  }
+}
