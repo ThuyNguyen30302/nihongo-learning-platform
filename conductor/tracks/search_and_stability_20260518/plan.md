@@ -2,7 +2,7 @@
 
 Created: 2026-05-18
 
-Current state: implemented and pushed, pending user approval before issue closure. Search mode splitting was reverted on 2026-05-19 per user request; search is unified again.
+Current state: implemented and partially approved. Search mode splitting was reverted on 2026-05-19 per user request; search is unified again.
 
 This track fixes the current visible defects first, then adds richer dictionary search modes. It follows the global workflow in `conductor/workflow.md`: plan first, tests before behavior changes where practical, commit code, then wait for user approval before closing issues.
 

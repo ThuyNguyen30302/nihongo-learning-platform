@@ -14,6 +14,6 @@ Detailed execution lives in [plan.md](./plan.md). Acceptance criteria live in [s
 
 ## Current State
 
-Code has been implemented and pushed for issues 001-008. Issue 009 verification has passing automated checks recorded, but all GitHub/local issue checkboxes remain open until user approval is explicitly recorded.
+Code has been implemented and GitHub issues 001, 002, 003, 007, 008, and 009 are now closed after user approval.
 
 2026-05-19 change request: explicit search mode selection was removed. Search now uses one unified query path again, while handwriting remains a separate input entry point.
