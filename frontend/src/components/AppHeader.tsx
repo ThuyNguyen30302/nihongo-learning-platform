@@ -29,7 +29,7 @@ export default function AppHeader({
   actions,
 }: AppHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 border-b border-outline-variant bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/90">
+    <header className="sticky top-0 z-50 border-b border-outline-variant bg-surface">
       <div className="max-w-[1100px] mx-auto px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
