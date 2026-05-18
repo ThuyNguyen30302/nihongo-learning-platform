@@ -34,6 +34,8 @@ export interface KanjiInfo {
   strokes: string[]; // SVG path data for each stroke
   stroke_numbers: StrokeNumber[]; // Position of stroke numbers
   radical?: string;        // Primary radical symbol
+  radical_element?: string;
+  radical_original?: string;
 
   radical_meaning?: string; // Vietnamese meaning of radical
 }

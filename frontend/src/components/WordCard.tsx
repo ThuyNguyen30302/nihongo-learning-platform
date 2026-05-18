@@ -236,10 +236,15 @@ export default function WordCard({ word, onToggleFavorite }: WordCardProps) {
                     <div className="flex items-center gap-2">
                       <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                         <span className="text-2xl font-bold text-primary">
-                          {kanjiData.radical}
+                          {kanjiData.radical_element || kanjiData.radical}
                         </span>
                       </div>
                       <div>
+                        {kanjiData.radical_original && (
+                          <p className="text-sm text-on-surface">
+                            Gốc: {kanjiData.radical_original}
+                          </p>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           {kanjiData.radical_meaning}
                         </p>

@@ -32,6 +32,8 @@ describe('DatabaseService', () => {
         stroke_paths TEXT,
         stroke_numbers TEXT,
         radical TEXT,
+        radical_element TEXT,
+        radical_original TEXT,
         radical_meaning TEXT
       );
 
@@ -77,8 +79,8 @@ describe('DatabaseService', () => {
     );
     db.prepare(
       `
-      INSERT INTO kanji_data (kanji, meaning_vi, meaning_en, on_reading, kun_reading, stroke_count, stroke_paths, stroke_numbers, radical, radical_meaning)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO kanji_data (kanji, meaning_vi, meaning_en, on_reading, kun_reading, stroke_count, stroke_paths, stroke_numbers, radical, radical_element, radical_original, radical_meaning)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     ).run(
       '日',
@@ -90,6 +92,8 @@ describe('DatabaseService', () => {
       'M0 0 L1 1||M1 1 L2 2',
       JSON.stringify([{ x: 10, y: 20 }]),
       '日',
+      '日',
+      '',
       'mặt trời',
     );
 
@@ -161,6 +165,8 @@ describe('DatabaseService', () => {
     expect(service.getKanji('日')).toMatchObject({
       kanji: '日',
       radical: '日',
+      radical_element: '日',
+      radical_original: '',
       radical_meaning: 'mặt trời',
     });
   });

@@ -16,6 +16,8 @@ export interface KanjiResponse {
   strokes: string[];
   stroke_numbers: StrokeNumber[];
   radical?: string;
+  radical_element?: string;
+  radical_original?: string;
 
   radical_meaning?: string;
 }
@@ -61,6 +63,8 @@ export class KanjiService {
       strokes,
       stroke_numbers,
       radical: kanjiData.radical,
+      radical_element: kanjiData.radical_element,
+      radical_original: kanjiData.radical_original,
 
       radical_meaning: kanjiData.radical_meaning,
     };

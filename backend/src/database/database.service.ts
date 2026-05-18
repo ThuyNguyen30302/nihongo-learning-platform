@@ -26,6 +26,8 @@ export interface Kanji {
   stroke_paths: string;
   stroke_numbers?: string; // JSON array of {x, y} positions
   radical?: string; // Primary radical symbol
+  radical_element?: string;
+  radical_original?: string;
 
   radical_meaning?: string; // Vietnamese meaning of radical
 }
@@ -49,6 +51,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     this.initializeTables();
     this.seedData();
     this.populateMissingWordHanViet();
+    this.populateMissingRadicalShapes();
   }
 
   onModuleDestroy() {
@@ -82,6 +85,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         stroke_paths TEXT,
         stroke_numbers TEXT,
         radical TEXT,
+        radical_element TEXT,
+        radical_original TEXT,
 
         radical_meaning TEXT
       );
@@ -100,6 +105,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
     // FTS5 full-text search (idempotent — won't recreate if exists)
     this.ensureColumn('words', 'han_viet', 'TEXT');
+    this.ensureColumn('kanji_data', 'radical_element', 'TEXT');
+    this.ensureColumn('kanji_data', 'radical_original', 'TEXT');
     this.initFTS5();
   }
 
@@ -1192,6 +1199,69 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
 
     return readings;
+  }
+
+  private populateMissingRadicalShapes() {
+    const kanjiRows = this.db
+      .prepare(
+        "SELECT kanji FROM kanji_data WHERE radical_element IS NULL OR radical_element = '' OR radical_original IS NULL",
+      )
+      .all() as Pick<Kanji, 'kanji'>[];
+    if (kanjiRows.length === 0) {
+      return;
+    }
+
+    const update = this.db.prepare(
+      'UPDATE kanji_data SET radical_element = ?, radical_original = ? WHERE kanji = ?',
+    );
+    const updateBatch = this.db.transaction(() => {
+      for (const row of kanjiRows) {
+        const metadata = this.loadKanjiVGMetadata(row.kanji);
+        if (metadata.element || metadata.original !== undefined) {
+          update.run(
+            metadata.element || '',
+            metadata.original || '',
+            row.kanji,
+          );
+        }
+      }
+    });
+
+    updateBatch();
+  }
+
+  private loadKanjiVGMetadata(kanji: string) {
+    const codePoint = kanji
+      .codePointAt(0)
+      ?.toString(16)
+      .padStart(5, '0')
+      .toLowerCase();
+    if (!codePoint) {
+      return {};
+    }
+
+    const svgPath = path.join(
+      process.cwd(),
+      'kanjivg_data',
+      'kanji',
+      `${codePoint}.svg`,
+    );
+    if (!fs.existsSync(svgPath)) {
+      return {};
+    }
+
+    const svg = fs.readFileSync(svgPath, 'utf8');
+    const rootGroup = svg.match(
+      new RegExp(`<g[^>]+id="kvg:${codePoint}"[^>]*>`),
+    )?.[0];
+    if (!rootGroup) {
+      return {};
+    }
+
+    return {
+      element: rootGroup.match(/kvg:element="([^"]+)"/)?.[1],
+      original: rootGroup.match(/kvg:original="([^"]+)"/)?.[1],
+    };
   }
 
   searchWords(query: string, type: SearchType = 'auto'): Word[] {

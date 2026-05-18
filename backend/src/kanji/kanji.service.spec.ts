@@ -29,6 +29,8 @@ describe('KanjiService', () => {
       stroke_paths: 'M0 0 L1 1||M1 1 L2 2',
       stroke_numbers: JSON.stringify([{ x: 10, y: 20 }]),
       radical: '日',
+      radical_element: '日',
+      radical_original: '',
       radical_meaning: 'mặt trời',
     });
 
@@ -42,6 +44,8 @@ describe('KanjiService', () => {
       strokes: ['M0 0 L1 1', 'M1 1 L2 2'],
       stroke_numbers: [{ x: 10, y: 20 }],
       radical: '日',
+      radical_element: '日',
+      radical_original: '',
       radical_meaning: 'mặt trời',
     });
   });
