@@ -4,6 +4,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
+- [ ] **Track: Quy hoạch lại dự án, dọn code dư thừa và chuẩn hóa test**
+  *Link: [./tracks/project_reorganization_20260518/](./tracks/project_reorganization_20260518/)*
+
 - [ ] **Track: Fix API integration and expand seed data**
   *Link: [./fix_api_integration_20260403/](./fix_api_integration_20260403/)*
 

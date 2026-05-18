@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Carrot - Japanese Vocabulary Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#001f28",
+                      "on-primary-container": "#6a2d00",
+                      "on-error": "#ffffff",
+                      "surface": "#fff8f6",
+                      "surface-container-highest": "#f2dfd5",
+                      "on-background": "#231914",
+                      "on-secondary-container": "#406d2f",
+                      "background": "#fff8f6",
+                      "secondary-fixed-dim": "#a1d489",
+                      "on-secondary-fixed": "#052100",
+                      "primary-fixed-dim": "#ffb68d",
+                      "surface-variant": "#f2dfd5",
+                      "on-surface-variant": "#564338",
+                      "inverse-primary": "#ffb68d",
+                      "primary-fixed": "#ffdbc9",
+                      "inverse-on-surface": "#ffede5",
+                      "secondary-container": "#baeea0",
+                      "primary-container": "#ff8c42",
+                      "on-tertiary-container": "#004556",
+                      "on-primary": "#ffffff",
+                      "surface-tint": "#9b4500",
+                      "on-tertiary": "#ffffff",
+                      "surface-dim": "#ead6cd",
+                      "surface-bright": "#fff8f6",
+                      "error": "#ba1a1a",
+                      "secondary-fixed": "#bdf1a3",
+                      "inverse-surface": "#3a2e28",
+                      "on-secondary": "#ffffff",
+                      "on-primary-fixed": "#331200",
+                      "tertiary-fixed-dim": "#4cd6ff",
+                      "on-surface": "#231914",
+                      "on-secondary-fixed-variant": "#255015",
+                      "surface-container-high": "#f8e4db",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed": "#b7eaff",
+                      "tertiary": "#00677f",
+                      "outline-variant": "#ddc1b3",
+                      "on-tertiary-fixed-variant": "#004e60",
+                      "surface-container-low": "#fff1eb",
+                      "error-container": "#ffdad6",
+                      "surface-container": "#feeae0",
+                      "tertiary-container": "#00b9e2",
+                      "secondary": "#3c692b",
+                      "outline": "#897266",
+                      "on-primary-fixed-variant": "#763300",
+                      "primary": "#9b4500",
+                      "surface-container-lowest": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "stack-sm": "12px",
+                      "base": "8px",
+                      "gutter": "16px",
+                      "container-margin": "24px",
+                      "stack-md": "24px",
+                      "stack-lg": "48px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Be Vietnam Pro"],
+                      "body-lg": ["Be Vietnam Pro"],
+                      "label-sm": ["Be Vietnam Pro"],
+                      "label-md": ["Be Vietnam Pro"],
+                      "display-lg": ["Be Vietnam Pro"],
+                      "headline-lg": ["Be Vietnam Pro"],
+                      "body-md": ["Be Vietnam Pro"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                      "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .stroke-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .kanji-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #E5E5E5;
+            border-radius: 8px;
+            background: #ffffff;
+            font-size: 2rem;
+            color: #231914;
+            position: relative;
+        }
+        .kanji-cell::before, .kanji-cell::after {
+            content: '';
+            position: absolute;
+            background: #f0f0f0;
+            z-index: 0;
+        }
+        .kanji-cell::before { width: 1px; height: 100%; left: 50%; }
+        .kanji-cell::after { height: 1px; width: 100%; top: 50%; }
+        .kanji-char { position: relative; z-index: 10; }
+        .kanji-stroke-active { color: #FF8C42; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen pb-24">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline sticky top-0 z-50">
+<div class="flex justify-between items-center w-full px-container-margin py-4 max-w-[1100px] mx-auto">
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim tracking-tight">Carrot</div>
+<nav class="hidden md:flex gap-8 items-center">
+<a class="font-body-md text-body-md font-medium text-on-surface-variant dark:text-on-surface-variant pb-1 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Home</a>
+<a class="font-body-md text-body-md font-medium text-primary dark:text-primary-fixed-dim border-b-2 border-primary dark:border-primary-fixed-dim pb-1 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Dictionary</a>
+<a class="font-body-md text-body-md font-medium text-on-surface-variant dark:text-on-surface-variant pb-1 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Favorites</a>
+<a class="font-body-md text-body-md font-medium text-on-surface-variant dark:text-on-surface-variant pb-1 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Learn</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-primary" data-icon="account_circle">account_circle</button>
+</div>
+</div>
+</header>
+<main class="max-w-[1100px] mx-auto px-container-margin mt-stack-lg">
+<!-- Header Area / Info Section Restructured -->
+<section class="bg-surface-container-lowest p-stack-md rounded-2xl shadow-sm mb-stack-lg relative border border-surface-variant">
+<div class="absolute top-stack-md right-stack-md flex gap-2">
+<button aria-label="Listen" class="p-2 bg-primary-container text-on-primary-container rounded-full hover:bg-primary hover:text-on-primary transition-colors flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined" data-icon="volume_up">volume_up</span>
+</button>
+<button aria-label="Favorite" class="p-2 border border-primary text-primary rounded-full hover:bg-surface-container-low transition-colors flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+</button>
+</div>
+<div class="flex flex-col gap-stack-sm mb-stack-md">
+<div class="flex items-end gap-2 mb-2">
+<div class="flex flex-col items-center">
+<span class="font-body-md text-on-surface-variant mb-1">がくしゅう</span>
+<span class="font-display-lg text-[64px] leading-none text-on-background font-bold tracking-widest">学習</span>
+</div>
+</div>
+<h1 class="font-headline-lg text-primary mb-2">Học tập</h1>
+<p class="font-body-lg text-on-surface-variant max-w-2xl">Sự học tập, nghiên cứu và trau dồi kiến thức. Kết hợp giữa 'Học' (tiếp thu) và 'Tập' (luyện tập).</p>
+</div>
+<div class="pt-stack-md border-t border-surface-variant">
+<h3 class="font-label-md text-on-surface-variant uppercase tracking-wider mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-sm" data-icon="info">info</span> Thông tin từ vựng</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-4">
+<div>
+<span class="font-label-md text-on-surface-variant block mb-1">Cấp độ</span>
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full font-label-md inline-block">JLPT N5</span>
+</div>
+<div>
+<span class="font-label-md text-on-surface-variant block mb-1">Hán Việt</span>
+<span class="font-body-lg text-on-surface font-medium">HỌC TẬP</span>
+</div>
+</div>
+<div class="space-y-4">
+<div>
+<span class="font-label-md text-on-surface-variant block mb-1">Các dạng từ</span>
+<div class="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-2">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 bg-primary rounded-full"></span>
+<span class="font-label-md text-on-surface-variant w-24">Danh từ:</span>
+<span class="font-body-lg text-on-surface">学習</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 bg-secondary rounded-full"></span>
+<span class="font-label-md text-on-surface-variant w-24">Động từ:</span>
+<span class="font-body-lg text-on-surface">学習する</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Stroke Order Section -->
+<div class="p-stack-md bg-surface-container-lowest rounded-2xl shadow-sm mb-stack-lg border border-surface-variant">
+<!-- Tab System -->
+<div class="flex border-b border-outline-variant mb-8 overflow-x-auto">
+<button class="px-6 py-3 border-b-2 border-primary text-primary font-label-md whitespace-nowrap">Học (学)</button>
+<button class="px-6 py-3 text-on-surface-variant font-label-md hover:text-primary whitespace-nowrap transition-colors">Tập (習)</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+<!-- Left: Diagram and Draw button -->
+<div class="flex flex-col items-center">
+<div class="w-full aspect-square max-w-[320px] bg-[#fffcf5] border border-outline-variant rounded-2xl relative overflow-hidden shadow-sm">
+<div class="absolute inset-0" data-stitch-orig-opacity="0.5" style="background-image: linear-gradient(to right, rgb(240, 240, 240) 1px, transparent 1px), linear-gradient(rgb(240, 240, 240) 1px, transparent 1px), linear-gradient(to right, rgb(224, 224, 224) 2px, transparent 2px), linear-gradient(rgb(224, 224, 224) 2px, transparent 2px); background-size: 25% 25%, 25% 25%, 50% 50%, 50% 50%;"></div>
+<div class="relative w-full h-full p-8 flex items-center justify-center">
+<svg class="w-full h-full text-on-background" viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<text fill="currentColor" font-family="'Noto Sans JP', sans-serif" font-size="70" opacity="0.1" text-anchor="middle" x="50" y="60">学</text>
+<path d="M31.25,16.25c4.13,1.38,10.68,5.66,11.71,7.8" fill="none" stroke="#FF8C42" stroke-linecap="round" stroke-width="3"></path>
+<circle cx="31" cy="16" fill="#FF8C42" r="2"></circle>
+<path d="M51,11.75c1.12,1.12,1.75,2.75,1.75,4.5c0,4.88-0.01,9-0.01,13.25" fill="none" stroke="#FF8C42" stroke-linecap="round" stroke-width="3"></path>
+<circle cx="51" cy="12" fill="#FF8C42" r="2"></circle>
+<path d="M73,12.5c0.12,0.88-0.03,1.72-0.45,2.5c-1.8,3.38-4.3,6.88-9.05,11.75" fill="none" stroke="#FF8C42" stroke-linecap="round" stroke-width="3"></path>
+<circle cx="73" cy="12.5" fill="#FF8C42" r="2"></circle>
+<path d="M23,34.8c1.78,0.59,4.24,0.72,6.03,0.59c11.23-0.89,38.93-4.14,48.24-4.8c2.96-0.21,4.74,0.28,6.23,0.57" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5"></path>
+<path d="M28.5,45.5c1.25,1,2.05,2.46,2.25,4.25c1,9,2,24,2.75,34" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5"></path>
+<path d="M31.5,47.5c11.5-1.5,35.5-4.5,43-5c2.9-0.2,4.5,1.5,4.25,4.5c-1.25,15-4.5,33.5-10.5,42.5c-4.5,6.75-8.5,0.5-10.25-1.25" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5"></path>
+<path d="M51.5,47.5c0.75,0.75,1.25,2.25,1.25,4c0,11.5-0.12,28.5-0.12,32.75" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5"></path>
+<path d="M21.5,65.5c1.5,0.5,4.25,0.62,5.75,0.5c15.5-1.25,41.5-3.5,54.5-4.5c2.5-0.2,4,0.25,5.25,0.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5"></path>
+</svg>
+</div>
+<div class="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-4xl text-primary">play_circle</span>
+</div>
+</div>
+<button class="mt-6 flex items-center gap-2 px-8 py-3 bg-primary text-on-primary rounded-xl font-label-md hover:opacity-90 transition-opacity shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+                        Vẽ lại
+                    </button>
+</div>
+<!-- Right: Technical Details -->
+<div class="space-y-6">
+<div>
+<div class="inline-flex items-center gap-2 mb-1">
+<div class="w-1 h-4 bg-primary rounded-full"></div>
+<span class="font-label-md text-on-surface-variant">Hán Việt</span>
+</div>
+<p class="font-headline-md text-on-surface ml-3">HỌC</p>
+</div>
+<div>
+<div class="inline-flex items-center gap-2 mb-1">
+<div class="w-1 h-4 bg-secondary rounded-full"></div>
+<span class="font-label-md text-on-surface-variant">Bộ thủ</span>
+</div>
+<p class="font-body-md text-on-surface ml-3">子 (Tử)</p>
+</div>
+<div>
+<div class="inline-flex items-center gap-2 mb-1">
+<div class="w-1 h-4 bg-primary rounded-full"></div>
+<span class="font-label-md text-on-surface-variant">Số nét</span>
+</div>
+<p class="font-body-md text-on-surface ml-3">8 nét</p>
+</div>
+<div>
+<div class="inline-flex items-center gap-2 mb-1">
+<div class="w-1 h-4 bg-secondary rounded-full"></div>
+<span class="font-label-md text-on-surface-variant">Kunyomi</span>
+</div>
+<p class="font-body-md text-on-surface ml-3">まな.ぶ</p>
+</div>
+<div>
+<div class="inline-flex items-center gap-2 mb-1">
+<div class="w-1 h-4 bg-primary rounded-full"></div>
+<span class="font-label-md text-on-surface-variant">Onyomi</span>
+</div>
+<p class="font-body-md text-on-surface ml-3">ガク</p>
+</div>
+<div>
+<div class="inline-flex items-center gap-2 mb-2">
+<div class="w-1 h-4 bg-secondary rounded-full"></div>
+<span class="font-label-md text-on-surface-variant">Bộ phận cấu thành</span>
+</div>
+<div class="flex gap-2 ml-3 flex-wrap">
+<span class="w-10 h-10 flex items-center justify-center bg-surface-container rounded-lg text-on-surface font-headline-md shadow-sm border border-surface-variant">冖</span>
+<span class="w-10 h-10 flex items-center justify-center bg-surface-container rounded-lg text-on-surface font-headline-md shadow-sm border border-surface-variant">乂</span>
+<span class="w-10 h-10 flex items-center justify-center bg-surface-container rounded-lg text-on-surface font-headline-md shadow-sm border border-surface-variant">子</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Examples Section -->
+<section class="">
+<h3 class="font-headline-lg text-headline-lg text-on-background mb-stack-md">Ví dụ sử dụng</h3>
+<div class="space-y-4">
+<!-- Example 1 -->
+<div class="p-stack-md bg-surface-container-lowest rounded-2xl flex items-start gap-4 hover:shadow-md transition-shadow shadow-sm border border-surface-variant">
+<button class="material-symbols-outlined text-primary-container p-2 rounded-full bg-surface-container-low hover:bg-primary-container hover:text-on-primary-container transition-colors" data-icon="play_circle">play_circle</button>
+<div>
+<div class="flex flex-wrap items-baseline gap-1 mb-2">
+<ruby class="font-headline-md text-on-surface">学<rt class="text-xs text-on-surface-variant">がっ</rt></ruby>
+<ruby class="font-headline-md text-on-surface">校<rt class="text-xs text-on-surface-variant">こう</rt></ruby>
+<span class="font-body-lg text-on-surface">へ</span>
+<ruby class="font-headline-md text-on-surface">行<rt class="text-xs text-on-surface-variant">い</rt></ruby>
+<span class="font-body-lg text-on-surface">きます。</span>
+</div>
+<p class="text-on-surface-variant font-body-lg">Tôi đi đến trường.</p>
+</div>
+</div>
+<!-- Example 2 -->
+<div class="p-stack-md bg-surface-container-lowest rounded-2xl flex items-start gap-4 hover:shadow-md transition-shadow shadow-sm border border-surface-variant">
+<button class="material-symbols-outlined text-primary-container p-2 rounded-full bg-surface-container-low hover:bg-primary-container hover:text-on-primary-container transition-colors" data-icon="play_circle">play_circle</button>
+<div>
+<div class="flex flex-wrap items-baseline gap-1 mb-2">
+<ruby class="font-headline-md text-on-surface">日本<rt class="text-xs text-on-surface-variant">にほん</rt></ruby>
+<span class="font-body-lg text-on-surface">を</span>
+<ruby class="font-headline-md text-on-surface">学<rt class="text-xs text-on-surface-variant">まな</rt></ruby>
+<span class="font-body-lg text-on-surface">びます。</span>
+</div>
+<p class="text-on-surface-variant font-body-lg">Tôi học về Nhật Bản.</p>
+</div>
+</div>
+<!-- Example 3 -->
+<div class="p-stack-md bg-surface-container-lowest rounded-2xl flex items-start gap-4 hover:shadow-md transition-shadow shadow-sm border border-surface-variant">
+<button class="material-symbols-outlined text-primary-container p-2 rounded-full bg-surface-container-low hover:bg-primary-container hover:text-on-primary-container transition-colors" data-icon="play_circle">play_circle</button>
+<div>
+<div class="flex flex-wrap items-baseline gap-1 mb-2">
+<ruby class="font-headline-md text-on-surface">学<rt class="text-xs text-on-surface-variant">だく</rt></ruby>
+<ruby class="font-headline-md text-on-surface">生<rt class="text-xs text-on-surface-variant">せい</rt></ruby>
+<span class="font-body-lg text-on-surface">です。</span>
+</div>
+<p class="text-on-surface-variant font-body-lg">Tôi là học sinh.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Shared Component - Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 md:hidden bg-surface dark:bg-surface-dim border-t border-outline-variant dark:border-outline shadow-sm">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-label-sm text-label-sm">Search</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+<span class="font-label-sm text-label-sm">Favorites</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="style">style</span>
+<span class="font-label-sm text-label-sm">Learn</span>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Carrot - Từ vựng yêu thích</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#406d2f",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#763300",
+                        "outline": "#897266",
+                        "on-tertiary-fixed-variant": "#004e60",
+                        "secondary-container": "#baeea0",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#3a2e28",
+                        "surface": "#fff8f6",
+                        "surface-container": "#feeae0",
+                        "surface-container-low": "#fff1eb",
+                        "background": "#fff8f6",
+                        "on-surface": "#231914",
+                        "on-primary-fixed": "#331200",
+                        "on-background": "#231914",
+                        "primary-fixed-dim": "#ffb68d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#004556",
+                        "on-surface-variant": "#564338",
+                        "tertiary-container": "#00b9e2",
+                        "secondary-fixed": "#bdf1a3",
+                        "primary": "#9b4500",
+                        "surface-dim": "#ead6cd",
+                        "on-secondary-fixed-variant": "#255015",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#4cd6ff",
+                        "on-primary-container": "#6a2d00",
+                        "tertiary-fixed": "#b7eaff",
+                        "surface-container-high": "#f8e4db",
+                        "outline-variant": "#ddc1b3",
+                        "primary-container": "#ff8c42",
+                        "primary-fixed": "#ffdbc9",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#a1d489",
+                        "on-error-container": "#93000a",
+                        "secondary": "#3c692b",
+                        "inverse-on-surface": "#ffede5",
+                        "surface-container-highest": "#f2dfd5",
+                        "inverse-primary": "#ffb68d",
+                        "on-primary": "#ffffff",
+                        "surface-bright": "#fff8f6",
+                        "on-secondary-fixed": "#052100",
+                        "on-tertiary-fixed": "#001f28",
+                        "surface-variant": "#f2dfd5",
+                        "tertiary": "#00677f",
+                        "surface-tint": "#9b4500"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "48px",
+                        "stack-md": "24px",
+                        "container-margin": "24px",
+                        "base": "8px",
+                        "stack-sm": "12px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Be Vietnam Pro"],
+                        "headline-md": ["Be Vietnam Pro"],
+                        "body-md": ["Be Vietnam Pro"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "label-sm": ["Be Vietnam Pro"],
+                        "label-md": ["Be Vietnam Pro"],
+                        "body-lg": ["Be Vietnam Pro"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[style*="'FILL' 1"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col antialiased">
+<!-- TopAppBar (Web Desktop) -->
+<header class="hidden md:flex justify-between items-center w-full px-container-margin py-base max-w-[1100px] mx-auto bg-surface docked full-width top-0 z-50">
+<div class="font-display-lg text-display-lg font-bold text-primary">
+            Carrot
+        </div>
+<nav class="flex gap-stack-md">
+<!-- Home: Inactive -->
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">
+                Home
+            </a>
+<!-- Dictionary: Inactive -->
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">
+                Dictionary
+            </a>
+<!-- Favorites: Active -->
+<a class="text-primary border-b-2 border-primary pb-1 font-bold text-headline-md font-headline-md opacity-80 scale-95 transition-all" href="#">
+                Favorites
+            </a>
+<!-- Flashcards: Inactive -->
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">
+                Flashcards
+            </a>
+</nav>
+<div class="flex items-center">
+<button aria-label="Account" class="text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-[1100px] mx-auto px-container-margin pt-stack-md pb-stack-lg md:pt-stack-lg flex flex-col gap-stack-lg">
+<!-- Header Section -->
+<section class="flex flex-col gap-base">
+<h1 class="font-headline-lg text-headline-lg text-on-background">Từ vựng yêu thích</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">142 từ đã lưu</p>
+</section>
+<!-- Search & Filter Bar -->
+<section class="flex flex-col sm:flex-row gap-gutter w-full">
+<div class="relative flex-grow">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full pl-10 pr-4 py-3 bg-surface-container-lowest border border-outline focus:border-primary-container focus:ring-1 focus:ring-primary-container rounded-lg font-body-md text-body-md text-on-surface transition-colors placeholder-on-surface-variant" placeholder="Tìm kiếm trong danh sách..." type="text"/>
+</div>
+<div class="flex gap-base items-center">
+<button class="flex items-center gap-2 px-4 py-3 bg-surface-container-lowest border border-outline rounded-lg hover:bg-surface-variant transition-colors text-on-surface font-label-md text-label-md whitespace-nowrap">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+                    Cấp độ (Tất cả)
+                </button><div class="flex bg-surface-container-low border border-outline rounded-lg p-1">
+<button aria-label="Grid View" class="p-1.5 rounded-md bg-primary-container text-on-primary-container shadow-sm">
+<span class="material-symbols-outlined text-[20px] block">grid_view</span>
+</button>
+<button aria-label="List View" class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px] block">view_list</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Vocabulary Grid -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-stack-md view-container">
+<!-- Card 1 -->
+<article class="relative flex flex-col bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-md shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0px_8px_30px_rgba(255,140,66,0.15)] group">
+<button aria-label="Remove from favorites" class="absolute top-4 right-4 text-primary-container hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+<div class="flex flex-col gap-1 mb-stack-md pr-8">
+<span class="font-body-md text-body-md text-on-surface-variant tracking-wider">たべる</span>
+<h2 class="font-display-lg text-display-lg text-on-surface">食べる</h2>
+</div>
+<div class="mt-auto flex flex-col gap-base border-t border-surface-variant pt-base">
+<p class="font-headline-md text-headline-md text-on-background">Ăn</p>
+<div class="flex items-center justify-between mt-2">
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-full w-fit">Động từ</span>
+<span class="text-outline font-label-md text-label-md font-bold">N5</span>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="relative flex flex-col bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-md shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0px_8px_30px_rgba(255,140,66,0.15)] group">
+<button aria-label="Remove from favorites" class="absolute top-4 right-4 text-primary-container hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+<div class="flex flex-col gap-1 mb-stack-md pr-8">
+<span class="font-body-md text-body-md text-on-surface-variant tracking-wider">がっこう</span>
+<h2 class="font-display-lg text-display-lg text-on-surface">学校</h2>
+</div>
+<div class="mt-auto flex flex-col gap-base border-t border-surface-variant pt-base">
+<p class="font-headline-md text-headline-md text-on-background">Trường học</p>
+<div class="flex items-center justify-between mt-2">
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-full w-fit">Danh từ</span>
+<span class="text-outline font-label-md text-label-md font-bold">N5</span>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="relative flex flex-col bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-md shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0px_8px_30px_rgba(255,140,66,0.15)] group">
+<button aria-label="Remove from favorites" class="absolute top-4 right-4 text-primary-container hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+<div class="flex flex-col gap-1 mb-stack-md pr-8">
+<span class="font-body-md text-body-md text-on-surface-variant tracking-wider">むずかしい</span>
+<h2 class="font-display-lg text-display-lg text-on-surface">難しい</h2>
+</div>
+<div class="mt-auto flex flex-col gap-base border-t border-surface-variant pt-base">
+<p class="font-headline-md text-headline-md text-on-background">Khó, khó khăn</p>
+<div class="flex items-center justify-between mt-2">
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-full w-fit">Tính từ đuôi い</span>
+<span class="text-outline font-label-md text-label-md font-bold">N4</span>
+</div>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="relative flex flex-col bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-md shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0px_8px_30px_rgba(255,140,66,0.15)] group">
+<button aria-label="Remove from favorites" class="absolute top-4 right-4 text-primary-container hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+<div class="flex flex-col gap-1 mb-stack-md pr-8">
+<span class="font-body-md text-body-md text-on-surface-variant tracking-wider">じゅんび</span>
+<h2 class="font-display-lg text-display-lg text-on-surface">準備</h2>
+</div>
+<div class="mt-auto flex flex-col gap-base border-t border-surface-variant pt-base">
+<p class="font-headline-md text-headline-md text-on-background">Chuẩn bị</p>
+<div class="flex items-center justify-between mt-2">
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-full w-fit">Danh từ</span>
+<span class="text-outline font-label-md text-label-md font-bold">N3</span>
+</div>
+</div>
+</article>
+<!-- Card 5 -->
+<article class="relative flex flex-col bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-md shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0px_8px_30px_rgba(255,140,66,0.15)] group">
+<button aria-label="Remove from favorites" class="absolute top-4 right-4 text-primary-container hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+<div class="flex flex-col gap-1 mb-stack-md pr-8">
+<span class="font-body-md text-body-md text-on-surface-variant tracking-wider">けいけん</span>
+<h2 class="font-display-lg text-display-lg text-on-surface">経験</h2>
+</div>
+<div class="mt-auto flex flex-col gap-base border-t border-surface-variant pt-base">
+<p class="font-headline-md text-headline-md text-on-background">Kinh nghiệm</p>
+<div class="flex items-center justify-between mt-2">
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-full w-fit">Danh từ</span>
+<span class="text-outline font-label-md text-label-md font-bold">N4</span>
+</div>
+</div>
+</article>
+<!-- Card 6 -->
+<article class="relative flex flex-col bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-md shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0px_8px_30px_rgba(255,140,66,0.15)] group">
+<button aria-label="Remove from favorites" class="absolute top-4 right-4 text-primary-container hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+<div class="flex flex-col gap-1 mb-stack-md pr-8">
+<span class="font-body-md text-body-md text-on-surface-variant tracking-wider">あいさつ</span>
+<h2 class="font-display-lg text-display-lg text-on-surface">挨拶</h2>
+</div>
+<div class="mt-auto flex flex-col gap-base border-t border-surface-variant pt-base">
+<p class="font-headline-md text-headline-md text-on-background">Chào hỏi</p>
+<div class="flex items-center justify-between mt-2">
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-full w-fit">Danh từ</span>
+<span class="text-outline font-label-md text-label-md font-bold">N5</span>
+</div>
+</div>
+</article>
+</section><nav aria-label="Pagination" class="flex items-center justify-center gap-2 mt-stack-lg">
+<button class="flex items-center justify-center w-10 h-10 rounded-full border border-outline text-on-surface-variant hover:bg-surface-variant transition-colors disabled:opacity-50">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full bg-primary text-on-primary font-label-md">1</button>
+<button class="w-10 h-10 rounded-full border border-outline text-on-surface-variant hover:bg-surface-variant font-label-md transition-colors">2</button>
+<button class="w-10 h-10 rounded-full border border-outline text-on-surface-variant hover:bg-surface-variant font-label-md transition-colors">3</button>
+<span class="flex items-center px-2 text-on-surface-variant">...</span>
+<button class="w-10 h-10 rounded-full border border-outline text-on-surface-variant hover:bg-surface-variant font-label-md transition-colors">12</button>
+</div>
+<button class="flex items-center justify-center w-10 h-10 rounded-full border border-outline text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</nav>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface-container shadow-[0px_-4px_20px_rgba(0,0,0,0.05)] rounded-t-xl md:hidden pb-safe">
+<!-- Home: Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-primary-fixed-dim/20 transition-all rounded-full px-2 py-1" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<!-- Dictionary: Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-primary-fixed-dim/20 transition-all rounded-full px-2 py-1" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="menu_book">menu_book</span>
+<span class="font-label-sm text-label-sm">Dictionary</span>
+</a>
+<!-- Favorites: Active -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 scale-95 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="favorite" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label-sm text-label-sm font-bold">Favorites</span>
+</a>
+<!-- Flashcards: Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-primary-fixed-dim/20 transition-all rounded-full px-2 py-1" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="style">style</span>
+<span class="font-label-sm text-label-sm">Flashcards</span>
+</a>
+</nav>
+<!-- Bottom padding for mobile to prevent content from hiding behind fixed nav -->
+<div class="h-20 md:hidden"></div>
+</body></html>

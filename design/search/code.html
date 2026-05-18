@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html lang="vi" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Carrot - Japanese Dictionary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #fff8f6;
+        }
+        .soft-shadow {
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        .interaction-shadow {
+            box-shadow: 0px 8px 30px rgba(255, 140, 66, 0.15);
+        }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } } .cursor-blink { animation: blink 1s step-end infinite; }</style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed": "#001f28",
+                    "on-primary-container": "#6a2d00",
+                    "on-error": "#ffffff",
+                    "surface": "#fff8f6",
+                    "surface-container-highest": "#f2dfd5",
+                    "on-background": "#231914",
+                    "on-secondary-container": "#406d2f",
+                    "background": "#fff8f6",
+                    "secondary-fixed-dim": "#a1d489",
+                    "on-secondary-fixed": "#052100",
+                    "primary-fixed-dim": "#ffb68d",
+                    "surface-variant": "#f2dfd5",
+                    "on-surface-variant": "#564338",
+                    "inverse-primary": "#ffb68d",
+                    "primary-fixed": "#ffdbc9",
+                    "inverse-on-surface": "#ffede5",
+                    "secondary-container": "#baeea0",
+                    "primary-container": "#ff8c42",
+                    "on-tertiary-container": "#004556",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#9b4500",
+                    "on-tertiary": "#ffffff",
+                    "surface-dim": "#ead6cd",
+                    "surface-bright": "#fff8f6",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#bdf1a3",
+                    "inverse-surface": "#3a2e28",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed": "#331200",
+                    "tertiary-fixed-dim": "#4cd6ff",
+                    "on-surface": "#231914",
+                    "on-secondary-fixed-variant": "#255015",
+                    "surface-container-high": "#f8e4db",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#b7eaff",
+                    "tertiary": "#00677f",
+                    "outline-variant": "#ddc1b3",
+                    "on-tertiary-fixed-variant": "#004e60",
+                    "surface-container-low": "#fff1eb",
+                    "error-container": "#ffdad6",
+                    "surface-container": "#feeae0",
+                    "tertiary-container": "#00b9e2",
+                    "secondary": "#3c692b",
+                    "outline": "#897266",
+                    "on-primary-fixed-variant": "#763300",
+                    "primary": "#9b4500",
+                    "surface-container-lowest": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-sm": "12px",
+                    "base": "8px",
+                    "gutter": "16px",
+                    "container-margin": "24px",
+                    "stack-md": "24px",
+                    "stack-lg": "48px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Be Vietnam Pro"],
+                    "body-lg": ["Be Vietnam Pro"],
+                    "label-sm": ["Be Vietnam Pro"],
+                    "label-md": ["Be Vietnam Pro"],
+                    "display-lg": ["Be Vietnam Pro"],
+                    "headline-lg": ["Be Vietnam Pro"],
+                    "body-md": ["Be Vietnam Pro"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style data-stitch-cursor="">@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } } .cursor-blink { animation: blink 1s step-end infinite; }</style><style data-stitch-scroll-lock="">@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } } .cursor-blink { animation: blink 1s step-end infinite; }</style></head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface border-b border-outline-variant fixed top-0 left-0 right-0 z-50">
+<nav class="flex justify-between items-center w-full px-container-margin py-4 max-w-[1100px] mx-auto">
+<div class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Carrot</div>
+<!-- Desktop Nav -->
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-on-surface-variant pb-1 font-body-md text-body-md font-medium hover:text-primary transition-colors duration-200" href="#">Home</a>
+<a class="text-primary border-b-2 border-primary pb-1 font-body-md text-body-md font-medium" href="#">Dictionary</a>
+<a class="text-on-surface-variant pb-1 font-body-md text-body-md font-medium hover:text-primary transition-colors duration-200" href="#">Favorites</a>
+<a class="text-on-surface-variant pb-1 font-body-md text-body-md font-medium hover:text-primary transition-colors duration-200" href="#">Flashcards</a>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary cursor-pointer" data-icon="account_circle">account_circle</span>
+</div>
+</nav>
+</header>
+<!-- Main Content -->
+<main class="flex-grow pt-32 pb-24 px-container-margin max-w-[1000px] mx-auto w-full">
+<!-- Search Section -->
+<section class="mb-stack-lg relative max-w-[800px] mx-auto z-40 text-center">
+<h1 class="font-headline-lg text-headline-lg text-on-background mb-stack-md">Tra cứu từ điển</h1>
+<div class="relative w-full mx-auto group">
+<!-- Search Input -->
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline" data-icon="search">search</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:border-primary-container interaction-shadow soft-shadow transition-all font-body-md text-body-md border-primary" placeholder="Tìm kiếm từ vựng, Kanji..." type="text"/><div class="absolute left-[13rem] h-6 w-[2px] bg-primary cursor-blink pointer-events-none"></div>
+</div>
+<!-- Floating Dropdown Container (Suggestions) -->
+<div class="absolute top-full mt-2 left-0 right-0 bg-surface-container-lowest border border-outline-variant rounded-xl soft-shadow p-4 flex flex-col gap-stack-md hidden group-hover:flex">
+<section>
+<h2 class="font-label-md text-label-md text-on-surface-variant mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="lightbulb">lightbulb</span>
+            Gợi ý tìm kiếm
+        </h2>
+<div class="flex flex-col">
+<div class="flex items-center justify-between py-2 px-3 hover:bg-surface-container-low cursor-pointer rounded-lg transition-colors group">
+<div class="flex items-baseline gap-3">
+<span class="font-headline-md text-[18px] text-on-surface">学校</span>
+<span class="font-body-md text-on-surface-variant text-sm">がっこう</span>
+<span class="font-body-md text-on-surface text-sm">Trường học</span>
+</div>
+<span class="text-[10px] font-label-sm bg-secondary-container text-on-secondary-container px-1.5 py-0.5 rounded">N5</span>
+</div>
+<div class="flex items-center justify-between py-2 px-3 hover:bg-surface-container-low cursor-pointer rounded-lg transition-colors group">
+<div class="flex items-baseline gap-3">
+<span class="font-headline-md text-[18px] text-on-surface">先生</span>
+<span class="font-body-md text-on-surface-variant text-sm">せんせい</span>
+<span class="font-body-md text-on-surface text-sm">Giáo viên</span>
+</div>
+<span class="text-[10px] font-label-sm bg-secondary-container text-on-secondary-container px-1.5 py-0.5 rounded">N5</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</section>
+<!-- Content Section: Two Columns -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter w-full">
+<!-- Lịch sử tìm kiếm Column -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl soft-shadow p-6 flex flex-col gap-4">
+<h2 class="font-headline-md text-[20px] text-on-surface flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary" data-icon="history">history</span>
+            Lịch sử tìm kiếm
+        </h2>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between py-3 px-4 hover:bg-surface-container-low cursor-pointer rounded-lg transition-colors border border-transparent hover:border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="flex items-baseline gap-3">
+<span class="font-headline-md text-[18px] text-on-surface">希望</span>
+<span class="font-body-md text-on-surface-variant text-sm">きぼう</span>
+<span class="font-body-md text-on-surface text-sm">Hy vọng</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between py-3 px-4 hover:bg-surface-container-low cursor-pointer rounded-lg transition-colors border border-transparent hover:border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="flex items-baseline gap-3">
+<span class="font-headline-md text-[18px] text-on-surface">家族</span>
+<span class="font-body-md text-on-surface-variant text-sm">かぞく</span>
+<span class="font-body-md text-on-surface text-sm">Gia đình</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Từ vựng yêu thích Column -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl soft-shadow p-6 flex flex-col gap-4">
+<div class="flex justify-between items-center mb-2">
+<h2 class="font-headline-md text-[20px] text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="star">star</span>
+                Từ vựng yêu thích
+            </h2>
+<a class="text-primary font-label-md hover:underline" href="#">Xem tất cả</a>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between py-3 px-4 hover:bg-surface-container-low cursor-pointer rounded-lg transition-colors border border-transparent hover:border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="flex items-baseline gap-3">
+<span class="font-headline-md text-[18px] text-on-surface">勉強</span>
+<span class="font-body-md text-on-surface-variant text-sm">べんきょう</span>
+<span class="font-body-md text-on-surface text-sm">Học tập</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="star">star</span>
+</div>
+<div class="flex items-center justify-between py-3 px-4 hover:bg-surface-container-low cursor-pointer rounded-lg transition-colors border border-transparent hover:border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="flex items-baseline gap-3">
+<span class="font-headline-md text-[18px] text-on-surface">頑張る</span>
+<span class="font-body-md text-on-surface-variant text-sm">がんばる</span>
+<span class="font-body-md text-on-surface text-sm">Cố gắng</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="star">star</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 md:hidden bg-surface border-t border-outline-variant shadow-sm">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:bg-surface-container-low transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-label-sm text-label-sm">Search</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+<span class="font-label-sm text-label-sm">Favorites</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="style">style</span>
+<span class="font-label-sm text-label-sm">Learn</span>
+</a>
+</nav>
+</body></html>
