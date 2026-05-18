@@ -7,17 +7,53 @@ import { Heart, Layers, Book, Home } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import SearchBar from '@/components/SearchBar';
 import WordListItem from '@/components/WordListItem';
-import { Word } from '@/lib/types';
+import { SearchType, Word } from '@/lib/types';
 import * as api from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { useDebounce } from '@/hooks/useDebounce';
+
+const searchModes: Array<{ type: SearchType; label: string; placeholder: string }> = [
+  {
+    type: 'auto',
+    label: 'Tất cả',
+    placeholder: 'Tìm kiếm từ vựng, Kanji...',
+  },
+  {
+    type: 'romaji',
+    label: 'Romaji',
+    placeholder: 'Ví dụ: nihon, taberu...',
+  },
+  {
+    type: 'vietnamese',
+    label: 'Tiếng Việt',
+    placeholder: 'Ví dụ: nước, học sinh...',
+  },
+  {
+    type: 'kana',
+    label: 'Kana',
+    placeholder: 'Ví dụ: にほん, たべる...',
+  },
+  {
+    type: 'kanji',
+    label: 'Hán tự',
+    placeholder: 'Ví dụ: 日本, 食べる...',
+  },
+];
+
+function normalizeSearchType(type: string | null): SearchType {
+  return searchModes.some((mode) => mode.type === type)
+    ? (type as SearchType)
+    : 'auto';
+}
 
 export default function SearchPageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialQuery = searchParams.get('q') || '';
+  const initialType = normalizeSearchType(searchParams.get('type'));
 
   const [query, setQuery] = useState(initialQuery);
+  const [searchType, setSearchType] = useState<SearchType>(initialType);
   const [results, setResults] = useState<Word[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +63,9 @@ export default function SearchPageClient() {
   const [suggestions, setSuggestions] = useState<Word[] | undefined>(undefined);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const debouncedQuery = useDebounce(autoQuery.trim(), 300);
+  const activeMode = searchModes.find((mode) => mode.type === searchType) ?? searchModes[0];
 
-  const performSearch = useCallback(async (q: string) => {
+  const performSearch = useCallback(async (q: string, type: SearchType) => {
     if (!q.trim()) {
       setResults([]);
       setError(null);
@@ -37,7 +74,7 @@ export default function SearchPageClient() {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.searchWords(q.trim());
+      const response = await api.searchWords(q.trim(), type);
       const wordsWithFavorites = response.results.map((word) => ({
         ...word,
         isFavorite: favorites.has(word.id),
@@ -57,8 +94,9 @@ export default function SearchPageClient() {
 
   useEffect(() => {
     setQuery(initialQuery);
-    performSearch(initialQuery);
-  }, [initialQuery, performSearch]);
+    setSearchType(initialType);
+    performSearch(initialQuery, initialType);
+  }, [initialQuery, initialType, performSearch]);
 
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) {
@@ -70,7 +108,7 @@ export default function SearchPageClient() {
     setSuggestionsLoading(true);
 
     api
-      .searchWords(debouncedQuery)
+      .searchWords(debouncedQuery, searchType)
       .then((response) => {
         if (!cancelled) {
           setSuggestions(response.results);
@@ -87,7 +125,7 @@ export default function SearchPageClient() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery]);
+  }, [debouncedQuery, searchType]);
 
   const loadFavorites = async () => {
     try {
@@ -101,7 +139,16 @@ export default function SearchPageClient() {
 
   const handleSearch = (q: string) => {
     if (q.trim()) {
-      router.push(`/search?q=${encodeURIComponent(q.trim())}`);
+      router.push(
+        `/search?q=${encodeURIComponent(q.trim())}&type=${searchType}`,
+      );
+    }
+  };
+
+  const handleSearchTypeChange = (type: SearchType) => {
+    setSearchType(type);
+    if (query.trim()) {
+      router.push(`/search?q=${encodeURIComponent(query.trim())}&type=${type}`);
     }
   };
 
@@ -168,12 +215,28 @@ export default function SearchPageClient() {
           <SearchBar
             onSearch={handleSearch}
             initialValue={query}
-            placeholder="Tìm kiếm từ vựng, Kanji..."
+            placeholder={activeMode.placeholder}
             suggestions={suggestions}
             suggestionsLoading={suggestionsLoading}
             onSuggestionSelect={handleSuggestionSelect}
             onQueryChange={handleQueryChange}
           />
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {searchModes.map((mode) => (
+              <button
+                key={mode.type}
+                type="button"
+                onClick={() => handleSearchTypeChange(mode.type)}
+                className={`rounded-md border px-3 py-2 text-label-md font-medium transition-colors ${
+                  searchType === mode.type
+                    ? 'border-primary bg-primary text-on-primary'
+                    : 'border-outline-variant bg-surface text-muted-foreground hover:border-primary hover:text-primary'
+                }`}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
         </section>
 
         <section className="mt-8">
@@ -207,7 +270,7 @@ export default function SearchPageClient() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-label-md font-semibold text-muted-foreground">
-                  {results.length} kết quả cho “{query}”
+                  {results.length} kết quả {activeMode.label.toLowerCase()} cho “{query}”
                 </h3>
               </div>
               {results.map((word) => (

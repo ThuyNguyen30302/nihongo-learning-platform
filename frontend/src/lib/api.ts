@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Word, SearchResponse, FlashcardData, KanjiInfo } from './types';
+import { Word, SearchResponse, FlashcardData, KanjiInfo, SearchType } from './types';
 
 const api = axios.create({
   baseURL: 'http://localhost:3001',
@@ -9,9 +9,12 @@ const api = axios.create({
   },
 });
 
-export const searchWords = async (query: string): Promise<SearchResponse> => {
+export const searchWords = async (
+  query: string,
+  type: SearchType = 'auto',
+): Promise<SearchResponse> => {
   const response = await api.get<SearchResponse>('/api/search', {
-    params: { q: query },
+    params: { q: query, type },
   });
   return response.data;
 };
