@@ -2,7 +2,7 @@
 
 Created: 2026-05-18
 
-Current state: implemented and pushed, pending user approval before issue closure.
+Current state: implemented and pushed, pending user approval before issue closure. Search mode splitting was reverted on 2026-05-19 per user request; search is unified again.
 
 This track fixes the current visible defects first, then adds richer dictionary search modes. It follows the global workflow in `conductor/workflow.md`: plan first, tests before behavior changes where practical, commit code, then wait for user approval before closing issues.
 
@@ -56,8 +56,8 @@ This track fixes the current visible defects first, then adds richer dictionary 
 - Issue 001: implemented in commit `b690bb8` with UTF-8/mojibake guard test.
 - Issue 002: implemented in commit `70247da` with path-length based stroke animation.
 - Issue 003: implemented in commit `d0a459c` with a fully opaque sticky header.
-- Issue 004: implemented in commit `373c516` with backend `type` search support and Jest coverage.
-- Issue 005: implemented in commit `8422bcb` with frontend search mode controls and API typing.
+- Issue 004: implemented in commit `373c516` with backend `type` search support and Jest coverage, then superseded on 2026-05-19 by unified backend search.
+- Issue 005: implemented in commit `8422bcb` with frontend search mode controls and API typing, then superseded on 2026-05-19 by unified search UI.
 - Issue 006: implemented in commit `324f7fa` as a handwriting search entry point with manual candidate submission; automatic recognition is still deferred.
 - Issue 007: implemented in commit `dc46932` with vocabulary `han_viet` data and UI display.
 - Issue 008: implemented in commit `5263c04` with KanjiVG-derived `radical_element` and `radical_original`.

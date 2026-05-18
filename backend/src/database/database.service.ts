@@ -38,8 +38,6 @@ export interface Favorite {
   created_at: string;
 }
 
-export type SearchType = 'auto' | 'romaji' | 'vietnamese' | 'kana' | 'kanji';
-
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private db: Database.Database;
@@ -1264,13 +1262,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  searchWords(query: string, type: SearchType = 'auto'): Word[] {
+  searchWords(query: string): Word[] {
     const q = query.trim();
     if (!q) return [];
-
-    if (type !== 'auto') {
-      return this.searchWordsByType(q, type);
-    }
 
     const likeQ = `%${q}%`;
     const prefixQ = `${q}%`;
@@ -1361,58 +1355,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         )
         .all(likeQ, likeQ, likeQ, likeQ) as Word[];
     }
-  }
-
-  private searchWordsByType(query: string, type: Exclude<SearchType, 'auto'>) {
-    const likeQ = `%${query}%`;
-    const prefixQ = `${query}%`;
-    const modeConfig: Record<
-      Exclude<SearchType, 'auto'>,
-      { column: keyof Word; caseInsensitive?: boolean }
-    > = {
-      romaji: { column: 'romaji', caseInsensitive: true },
-      vietnamese: { column: 'meaning_vi' },
-      kana: { column: 'kana' },
-      kanji: { column: 'kanji' },
-    };
-    const config = modeConfig[type];
-    const column = config.column;
-    const valueExpr = config.caseInsensitive
-      ? `LOWER(${String(column)})`
-      : String(column);
-    const paramValue = config.caseInsensitive ? query.toLowerCase() : query;
-    const likeValue = config.caseInsensitive ? likeQ.toLowerCase() : likeQ;
-    const prefixValue = config.caseInsensitive
-      ? prefixQ.toLowerCase()
-      : prefixQ;
-
-    const sql = `
-      SELECT
-        id,
-        kanji,
-        kana,
-        romaji,
-        meaning_vi,
-        han_viet,
-        meaning_en,
-        part_of_speech,
-        example_sentence,
-        example_meaning_vi
-      FROM (
-        SELECT words.*, 100 as score FROM words WHERE ${valueExpr} = ?
-        UNION ALL
-        SELECT words.*, 90 as score FROM words WHERE ${valueExpr} LIKE ? ESCAPE '\\'
-        UNION ALL
-        SELECT words.*, 60 as score FROM words WHERE ${valueExpr} LIKE ? ESCAPE '\\'
-      )
-      GROUP BY id
-      ORDER BY MAX(score) DESC, id ASC
-      LIMIT 50
-    `;
-
-    return this.db
-      .prepare(sql)
-      .all(paramValue, prefixValue, likeValue) as Word[];
   }
 
   getWordById(id: number): Word | undefined {

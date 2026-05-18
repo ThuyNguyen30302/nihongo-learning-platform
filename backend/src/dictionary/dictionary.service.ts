@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  DatabaseService,
-  SearchType,
-  Word,
-} from '../database/database.service';
+import { DatabaseService, Word } from '../database/database.service';
 
 export interface SearchResult {
   id: number;
@@ -22,11 +18,8 @@ export interface SearchResult {
 export class DictionaryService {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  search(
-    query: string,
-    type: SearchType = 'auto',
-  ): { results: SearchResult[] } {
-    const words = this.databaseService.searchWords(query, type);
+  search(query: string): { results: SearchResult[] } {
+    const words = this.databaseService.searchWords(query);
     return {
       results: words.map((word) => ({
         id: word.id,

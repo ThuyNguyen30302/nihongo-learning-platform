@@ -24,7 +24,7 @@ import KanjiStrokeOrder from "@/components/KanjiStrokeOrder";
 function extractKanji(text: string): string[] {
   const kanji: string[] = [];
   for (const char of text) {
-    if (/[一-龯]/.test(char) && !kanji.includes(char)) {
+    if (/[\u3400-\u9fff]/u.test(char) && !kanji.includes(char)) {
       kanji.push(char);
     }
   }

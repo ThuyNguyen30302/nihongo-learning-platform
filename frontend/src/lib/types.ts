@@ -51,8 +51,6 @@ export interface SearchResponse {
   results: Word[];
 }
 
-export type SearchType = 'auto' | 'romaji' | 'vietnamese' | 'kana' | 'kanji';
-
 // Backend returns favorites as: { id, word_id, created_at, ...wordFields }
 export interface FavoriteWord extends Word {
   id: number;

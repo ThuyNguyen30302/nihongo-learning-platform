@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Word, SearchResponse, FlashcardData, KanjiInfo, SearchType } from './types';
+import { Word, SearchResponse, FlashcardData, KanjiInfo } from './types';
 
 const api = axios.create({
   baseURL: 'http://localhost:3001',
@@ -9,12 +9,9 @@ const api = axios.create({
   },
 });
 
-export const searchWords = async (
-  query: string,
-  type: SearchType = 'auto',
-): Promise<SearchResponse> => {
+export const searchWords = async (query: string): Promise<SearchResponse> => {
   const response = await api.get<SearchResponse>('/api/search', {
-    params: { q: query, type },
+    params: { q: query },
   });
   return response.data;
 };
@@ -76,13 +73,13 @@ export const getFlashcards = async (): Promise<FlashcardData[]> => {
 };
 
 export const getKanji = async (kanji: string): Promise<KanjiInfo> => {
-  // Use query parameter for reliability with Unicode characters
-  const url = `http://localhost:3001/api/kanji?char=${encodeURIComponent(kanji)}`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch kanji: ${response.status}`);
-  }
-  return response.json();
+  const char =
+    Array.from(kanji).find((value) => /[\u3400-\u9fff]/u.test(value)) ??
+    kanji.trim();
+  const response = await api.get<KanjiInfo>('/api/kanji', {
+    params: { char },
+  });
+  return response.data;
 };
 
 export default api;

@@ -119,28 +119,28 @@ describe('DatabaseService', () => {
     });
   });
 
-  it('searches words by romaji mode', () => {
-    const results = service.searchWords('NIHON', 'romaji');
+  it('searches words by romaji in the unified search', () => {
+    const results = service.searchWords('NIHON');
 
     expect(results.map((word) => word.romaji)).toEqual(['nihon', 'nihongo']);
   });
 
-  it('searches words by Vietnamese meaning mode', () => {
-    const results = service.searchWords('Tiếng', 'vietnamese');
+  it('searches words by Vietnamese meaning in the unified search', () => {
+    const results = service.searchWords('Tiếng');
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({ meaning_vi: 'Tiếng Nhật' });
   });
 
-  it('searches words by kana mode', () => {
-    const results = service.searchWords('にほんご', 'kana');
+  it('searches words by kana in the unified search', () => {
+    const results = service.searchWords('にほんご');
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({ kana: 'にほんご' });
   });
 
-  it('searches words by kanji mode', () => {
-    const results = service.searchWords('日本語', 'kanji');
+  it('searches words by kanji in the unified search', () => {
+    const results = service.searchWords('日本語');
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({ kanji: '日本語' });

@@ -7,16 +7,14 @@ export class KanjiController {
 
   @Get()
   getKanji(@Query('char') char: string) {
-    console.log(
-      'KanjiController received:',
-      char,
-      'unicode:',
-      char?.charCodeAt(0).toString(16),
-    );
-    if (!char) {
+    const normalizedChar =
+      Array.from(char?.trim() ?? '').find((value) =>
+        /[\u3400-\u9fff]/u.test(value),
+      ) ?? '';
+    if (!normalizedChar) {
       throw new NotFoundException('Character parameter required');
     }
-    const kanjiData = this.kanjiService.getKanji(char);
+    const kanjiData = this.kanjiService.getKanji(normalizedChar);
     if (!kanjiData) {
       throw new NotFoundException('Kanji not found');
     }
