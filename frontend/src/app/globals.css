@@ -88,7 +88,7 @@
 
 /* Carrot Design System - Light Mode */
 :root {
-  --font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
   --background: #fff8f6;
   --foreground: #231914;
   --card: #ffffff;

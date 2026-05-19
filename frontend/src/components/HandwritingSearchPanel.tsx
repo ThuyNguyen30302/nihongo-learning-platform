@@ -23,7 +23,7 @@ declare global {
 }
 
 const CANVAS_ID = "kanji-handwriting-canvas";
-const CANVAS_SIZE = 260;
+const CANVAS_SIZE = 320;
 const KANJICANVAS_SCRIPT_ID = "kanjicanvas-script";
 const KANJICANVAS_PATTERNS_ID = "kanjicanvas-patterns";
 
@@ -37,9 +37,13 @@ function loadScript(id: string, src: string) {
 
     if (existing) {
       existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), {
-        once: true,
-      });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error(`Failed to load ${src}`)),
+        {
+          once: true,
+        },
+      );
       return;
     }
 
@@ -72,7 +76,9 @@ export default function HandwritingSearchPanel({
   onClose,
 }: HandwritingSearchPanelProps) {
   const initializedRef = useRef(false);
-  const recognitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recognitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [candidates, setCandidates] = useState<string[]>([]);
   const [libraryReady, setLibraryReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -159,13 +165,10 @@ export default function HandwritingSearchPanel({
         <X className="h-4 w-4" />
       </Button>
 
-      <div className="mb-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 pr-10">
-        <p className="text-xs text-muted-foreground">Vẽ Hán tự vào đây</p>
-        <p className="text-xs text-muted-foreground">Gợi ý kết quả</p>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-[320px_minmax(0,1fr)]">
         <div className="flex flex-col gap-3">
+          <p className="text-base text-muted-foreground">Vẽ Hán tự vào đây</p>
+
           <canvas
             id={CANVAS_ID}
             width={CANVAS_SIZE}
@@ -175,7 +178,7 @@ export default function HandwritingSearchPanel({
             onMouseLeave={scheduleRecognition}
             onPointerUp={scheduleRecognition}
             onTouchEnd={scheduleRecognition}
-            className="aspect-square w-full touch-none rounded-lg border border-outline-variant bg-[#fffaf2] shadow-sm [background-image:linear-gradient(#e5ded3_1px,transparent_1px),linear-gradient(90deg,#e5ded3_1px,transparent_1px)] [background-size:66px_66px]"
+            className="aspect-square w-full max-w-[320px] touch-none rounded-lg border border-outline-variant bg-[#fffaf2] shadow-sm [background-image:linear-gradient(#e5ded3_1px,transparent_1px),linear-gradient(90deg,#e5ded3_1px,transparent_1px)] [background-size:64px_64px]"
             aria-label="Khung viết tay Hán tự"
           />
 
@@ -208,34 +211,34 @@ export default function HandwritingSearchPanel({
           </div>
         </div>
 
-        <div className="min-w-0">
-          <div className="min-h-full rounded-md border border-outline-variant bg-background p-3">
-            {loadError ? (
-              <p className="text-sm text-destructive">{loadError}</p>
-            ) : candidates.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
-                {candidates.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => handleCandidateClick(value)}
-                    className="grid h-16 w-full place-items-center rounded-lg border border-outline-variant bg-surface text-[28px] font-medium text-on-surface transition-colors hover:border-primary hover:bg-primary hover:text-on-primary"
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="flex min-h-[320px] items-center justify-center text-center text-sm text-muted-foreground">
-                {libraryReady
-                  ? "Vẽ nét rõ ràng để có kết quả chính xác nhất."
-                  : "Đang tải bộ nhận diện viết tay..."}
-              </div>
-            )}
+        <div className="flex flex-col gap-3 min-w-0">
+          <p className="text-base text-muted-foreground">Gợi ý kết quả</p>
 
-            <p className="mt-2 text-right text-xs text-muted-foreground">
-              Mẹo: Vẽ nét rõ ràng để có kết quả chính xác nhất.
-            </p>
+          <div className=" h-full flex flex-col rounded-md border border-outline-variant bg-background p-3">
+            <div className="flex-1">
+              {loadError ? (
+                <p className="text-sm text-destructive">{loadError}</p>
+              ) : candidates.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
+                  {candidates.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => handleCandidateClick(value)}
+                      className="grid h-16 w-full place-items-center rounded-lg border border-outline-variant bg-surface text-[28px] font-medium text-on-surface transition-colors hover:border-primary hover:bg-primary hover:text-on-primary"
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex min-h-[320px] items-center justify-center text-center text-sm text-muted-foreground">
+                  {libraryReady
+                    ? "Vẽ nét rõ ràng để có kết quả chính xác nhất."
+                    : "Đang tải bộ nhận diện viết tay..."}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
