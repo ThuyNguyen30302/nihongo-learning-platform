@@ -5,7 +5,6 @@ import { RotateCcw, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface HandwritingSearchPanelProps {
-  selectedText: string;
   onCharactersSelected: (characters: string) => void;
   onClose: () => void;
 }
@@ -69,7 +68,6 @@ function parseCandidates(rawCandidates: string | undefined) {
 }
 
 export default function HandwritingSearchPanel({
-  selectedText,
   onCharactersSelected,
   onClose,
 }: HandwritingSearchPanelProps) {
@@ -151,55 +149,62 @@ export default function HandwritingSearchPanel({
     <div className="mx-auto mt-3 w-full max-w-2xl rounded-lg border border-outline-variant bg-surface p-3 shadow-soft">
       <div className="grid gap-3 md:grid-cols-[260px_minmax(0,1fr)]">
         <div className="space-y-2">
-          <canvas
-            id={CANVAS_ID}
-            width={CANVAS_SIZE}
-            height={CANVAS_SIZE}
-            data-stroke-numbers="false"
-            onMouseUp={scheduleRecognition}
-            onMouseLeave={scheduleRecognition}
-            onPointerUp={scheduleRecognition}
-            onTouchEnd={scheduleRecognition}
-            className="aspect-square w-full touch-none rounded-lg border border-outline-variant bg-[#fffaf2] shadow-sm [background-image:linear-gradient(#e5ded3_1px,transparent_1px),linear-gradient(90deg,#e5ded3_1px,transparent_1px)] [background-size:65px_65px]"
-            aria-label="Khung viết tay Hán tự"
-          />
+          <div className="relative">
+            <canvas
+              id={CANVAS_ID}
+              width={CANVAS_SIZE}
+              height={CANVAS_SIZE}
+              data-stroke-numbers="false"
+              onMouseUp={scheduleRecognition}
+              onMouseLeave={scheduleRecognition}
+              onPointerUp={scheduleRecognition}
+              onTouchEnd={scheduleRecognition}
+              className="aspect-square w-full touch-none rounded-lg border border-outline-variant bg-[#fffaf2] shadow-sm [background-image:linear-gradient(#e5ded3_1px,transparent_1px),linear-gradient(90deg,#e5ded3_1px,transparent_1px)] [background-size:65px_65px]"
+              aria-label="Khung viết tay Hán tự"
+            />
 
-          <div className="grid grid-cols-3 gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="absolute right-2 top-2 h-8 w-8 rounded-full border border-outline-variant bg-background/95 shadow-sm"
+              aria-label="Tắt khung viết tay"
+              title="Tắt"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="icon"
               onClick={handleUndo}
               disabled={!libraryReady}
+              className="h-9 w-9"
+              aria-label="Lùi nét"
+              title="Lùi"
             >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Lùi
+              <RotateCcw className="h-4 w-4" />
             </Button>
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="icon"
               onClick={handleClear}
               disabled={!libraryReady}
+              className="h-9 w-9"
+              aria-label="Xóa nét"
+              title="Xóa"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Xóa
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>
-              <X className="mr-2 h-4 w-4" />
-              Tắt
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
         <div className="flex min-w-0 flex-col gap-3">
-          <div className="min-h-12 rounded-md border border-outline-variant bg-background px-3 py-2">
-            <p className="text-xs font-medium text-muted-foreground">Đã chọn</p>
-            <p className="mt-1 min-h-6 break-all text-xl font-semibold text-on-surface">
-              {selectedText || "Chưa có ký tự"}
-            </p>
-          </div>
-
           <div className="min-h-[166px] rounded-md border border-outline-variant bg-background p-3">
             {loadError ? (
               <p className="text-sm text-destructive">{loadError}</p>

@@ -202,7 +202,6 @@ export default function SearchPageClient() {
 
           {showHandwriting && (
             <HandwritingSearchPanel
-              selectedText={query}
               onCharactersSelected={handleHandwritingCharacters}
               onClose={() => setShowHandwriting(false)}
             />
