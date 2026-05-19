@@ -37,13 +37,9 @@ function loadScript(id: string, src: string) {
 
     if (existing) {
       existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener(
-        "error",
-        () => reject(new Error(`Failed to load ${src}`)),
-        {
-          once: true,
-        },
-      );
+      existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), {
+        once: true,
+      });
       return;
     }
 
@@ -150,13 +146,13 @@ export default function HandwritingSearchPanel({
   };
 
   return (
-    <div className="relative mx-auto mt-3 w-full max-w-4xl overflow-hidden rounded-lg border border-[#ead6ca] bg-[#fffaf6] p-4 shadow-soft">
+    <div className="relative mx-auto mt-3 w-full max-w-4xl overflow-hidden rounded-lg border border-outline-variant bg-surface p-4 shadow-soft">
       <Button
         type="button"
         variant="ghost"
         size="icon"
         onClick={onClose}
-        className="absolute right-3 top-3 z-10 h-8 w-8 rounded-full border border-[#ead6ca] bg-white/95 shadow-sm"
+        className="absolute right-3 top-3 z-10 h-8 w-8 rounded-full border border-outline-variant bg-background/95 shadow-sm"
         aria-label="Tắt khung viết tay"
         title="Tắt"
       >
@@ -164,12 +160,8 @@ export default function HandwritingSearchPanel({
       </Button>
 
       <div className="mb-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 pr-10">
-        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-600">
-          Vẽ Hán tự vào đây
-        </p>
-        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-600">
-          Gợi ý kết quả
-        </p>
+        <p className="text-xs text-muted-foreground">Vẽ Hán tự vào đây</p>
+        <p className="text-xs text-muted-foreground">Gợi ý kết quả</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-[320px_minmax(0,1fr)]">
@@ -183,7 +175,7 @@ export default function HandwritingSearchPanel({
             onMouseLeave={scheduleRecognition}
             onPointerUp={scheduleRecognition}
             onTouchEnd={scheduleRecognition}
-            className="aspect-square w-full touch-none rounded-lg border border-[#ead6ca] bg-[#fffdfb] shadow-sm [background-image:linear-gradient(#ead6ca_1px,transparent_1px),linear-gradient(90deg,#ead6ca_1px,transparent_1px)] [background-size:66px_66px]"
+            className="aspect-square w-full touch-none rounded-lg border border-outline-variant bg-[#fffaf2] shadow-sm [background-image:linear-gradient(#e5ded3_1px,transparent_1px),linear-gradient(90deg,#e5ded3_1px,transparent_1px)] [background-size:66px_66px]"
             aria-label="Khung viết tay Hán tự"
           />
 
@@ -193,7 +185,7 @@ export default function HandwritingSearchPanel({
               variant="outline"
               onClick={handleUndo}
               disabled={!libraryReady}
-              className="flex-1 border-[#ead6ca] bg-white text-[#4a372b] hover:bg-[#fff6ef]"
+              className="flex-1 border-outline-variant bg-background text-on-surface hover:bg-surface"
               aria-label="Lùi nét"
               title="Lùi"
             >
@@ -206,7 +198,7 @@ export default function HandwritingSearchPanel({
               variant="outline"
               onClick={handleClear}
               disabled={!libraryReady}
-              className="flex-1 border-[#ead6ca] bg-white text-[#4a372b] hover:bg-[#fff6ef]"
+              className="flex-1 border-outline-variant bg-background text-on-surface hover:bg-surface"
               aria-label="Xóa nét"
               title="Xóa"
             >
@@ -217,7 +209,7 @@ export default function HandwritingSearchPanel({
         </div>
 
         <div className="min-w-0">
-          <div className="min-h-full rounded-md border border-[#ead6ca] bg-[#fffdfb] p-3">
+          <div className="min-h-full rounded-md border border-outline-variant bg-background p-3">
             {loadError ? (
               <p className="text-sm text-destructive">{loadError}</p>
             ) : candidates.length > 0 ? (
@@ -227,7 +219,7 @@ export default function HandwritingSearchPanel({
                     key={value}
                     type="button"
                     onClick={() => handleCandidateClick(value)}
-                    className="grid h-16 w-full place-items-center rounded-lg border border-[#ead6ca] bg-white text-[28px] font-medium text-[#3b2e24] transition-colors hover:border-primary hover:bg-primary hover:text-on-primary"
+                    className="grid h-16 w-full place-items-center rounded-lg border border-outline-variant bg-surface text-[28px] font-medium text-on-surface transition-colors hover:border-primary hover:bg-primary hover:text-on-primary"
                   >
                     {value}
                   </button>
@@ -241,7 +233,7 @@ export default function HandwritingSearchPanel({
               </div>
             )}
 
-            <p className="mt-2 text-right text-xs italic text-slate-500">
+            <p className="mt-2 text-right text-xs text-muted-foreground">
               Mẹo: Vẽ nét rõ ràng để có kết quả chính xác nhất.
             </p>
           </div>
