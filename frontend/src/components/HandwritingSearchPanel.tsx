@@ -37,9 +37,13 @@ function loadScript(id: string, src: string) {
 
     if (existing) {
       existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), {
-        once: true,
-      });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error(`Failed to load ${src}`)),
+        {
+          once: true,
+        },
+      );
       return;
     }
 
@@ -64,7 +68,7 @@ function parseCandidates(rawCandidates: string | undefined) {
         .map((candidate) => candidate.trim())
         .filter(Boolean),
     ),
-  ).slice(0, 16);
+  ).slice(0, 12);
 }
 
 export default function HandwritingSearchPanel({
@@ -146,98 +150,101 @@ export default function HandwritingSearchPanel({
   };
 
   return (
-    <div className="mx-auto mt-3 w-full max-w-2xl rounded-lg border border-outline-variant bg-surface p-3 shadow-soft">
-      <div className="grid gap-3 md:grid-cols-[260px_minmax(0,1fr)]">
-        <div className="space-y-2">
-          <div className="relative">
-            <canvas
-              id={CANVAS_ID}
-              width={CANVAS_SIZE}
-              height={CANVAS_SIZE}
-              data-stroke-numbers="false"
-              onMouseUp={scheduleRecognition}
-              onMouseLeave={scheduleRecognition}
-              onPointerUp={scheduleRecognition}
-              onTouchEnd={scheduleRecognition}
-              className="aspect-square w-full touch-none rounded-lg border border-outline-variant bg-[#fffaf2] shadow-sm [background-image:linear-gradient(#e5ded3_1px,transparent_1px),linear-gradient(90deg,#e5ded3_1px,transparent_1px)] [background-size:65px_65px]"
-              aria-label="Khung viết tay Hán tự"
-            />
+    <div className="relative mx-auto mt-3 w-full max-w-4xl overflow-hidden rounded-lg border border-[#ead6ca] bg-[#fffaf6] p-4 shadow-soft">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onClose}
+        className="absolute right-3 top-3 z-10 h-8 w-8 rounded-full border border-[#ead6ca] bg-white/95 shadow-sm"
+        aria-label="Tắt khung viết tay"
+        title="Tắt"
+      >
+        <X className="h-4 w-4" />
+      </Button>
 
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="absolute right-2 top-2 h-8 w-8 rounded-full border border-outline-variant bg-background/95 shadow-sm"
-              aria-label="Tắt khung viết tay"
-              title="Tắt"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+      <div className="mb-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 pr-10">
+        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-600">
+          Vẽ Hán tự vào đây
+        </p>
+        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-600">
+          Gợi ý kết quả
+        </p>
+      </div>
 
-          <div className="flex items-center gap-2">
+      <div className="grid gap-4 md:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="flex flex-col gap-3">
+          <canvas
+            id={CANVAS_ID}
+            width={CANVAS_SIZE}
+            height={CANVAS_SIZE}
+            data-stroke-numbers="false"
+            onMouseUp={scheduleRecognition}
+            onMouseLeave={scheduleRecognition}
+            onPointerUp={scheduleRecognition}
+            onTouchEnd={scheduleRecognition}
+            className="aspect-square w-full touch-none rounded-lg border border-[#ead6ca] bg-[#fffdfb] shadow-sm [background-image:linear-gradient(#ead6ca_1px,transparent_1px),linear-gradient(90deg,#ead6ca_1px,transparent_1px)] [background-size:66px_66px]"
+            aria-label="Khung viết tay Hán tự"
+          />
+
+          <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
-              size="icon"
               onClick={handleUndo}
               disabled={!libraryReady}
-              className="h-9 w-9"
+              className="flex-1 border-[#ead6ca] bg-white text-[#4a372b] hover:bg-[#fff6ef]"
               aria-label="Lùi nét"
               title="Lùi"
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Lùi lại
             </Button>
+
             <Button
               type="button"
               variant="outline"
-              size="icon"
               onClick={handleClear}
               disabled={!libraryReady}
-              className="h-9 w-9"
+              className="flex-1 border-[#ead6ca] bg-white text-[#4a372b] hover:bg-[#fff6ef]"
               aria-label="Xóa nét"
               title="Xóa"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="mr-2 h-4 w-4" />
+              Xóa hết
             </Button>
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-3">
-          <div className="min-h-[166px] rounded-md border border-outline-variant bg-background p-3">
+        <div className="min-w-0">
+          <div className="min-h-full rounded-md border border-[#ead6ca] bg-[#fffdfb] p-3">
             {loadError ? (
               <p className="text-sm text-destructive">{loadError}</p>
             ) : candidates.length > 0 ? (
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-4 lg:grid-cols-5">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
                 {candidates.map((value) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => handleCandidateClick(value)}
-                    className="grid h-11 w-full place-items-center rounded-md border border-outline-variant bg-surface text-xl font-semibold text-on-surface transition-colors hover:border-primary hover:bg-primary hover:text-on-primary"
+                    className="grid h-16 w-full place-items-center rounded-lg border border-[#ead6ca] bg-white text-[28px] font-medium text-[#3b2e24] transition-colors hover:border-primary hover:bg-primary hover:text-on-primary"
                   >
                     {value}
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="flex h-full min-h-[138px] items-center justify-center text-center text-sm text-muted-foreground">
+              <div className="flex min-h-[320px] items-center justify-center text-center text-sm text-muted-foreground">
                 {libraryReady
-                  ? "Viết Hán tự trên canvas để xem ký tự gần giống."
+                  ? "Vẽ nét rõ ràng để có kết quả chính xác nhất."
                   : "Đang tải bộ nhận diện viết tay..."}
               </div>
             )}
-          </div>
 
-          <a
-            href="https://github.com/asdfjkl/kanjicanvas"
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
-          >
-            kanjicanvas
-          </a>
+            <p className="mt-2 text-right text-xs italic text-slate-500">
+              Mẹo: Vẽ nét rõ ràng để có kết quả chính xác nhất.
+            </p>
+          </div>
         </div>
       </div>
     </div>
