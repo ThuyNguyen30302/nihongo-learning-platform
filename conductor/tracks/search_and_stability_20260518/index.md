@@ -14,6 +14,8 @@ Detailed execution lives in [plan.md](./plan.md). Acceptance criteria live in [s
 
 ## Current State
 
-Code has been implemented and GitHub issues 001, 002, 003, 007, 008, and 009 are now closed after user approval.
+Code has been implemented and GitHub issues 001, 002, 003, 007, 008, and 009 are now closed after user approval. Issues 004 and 005 were closed as not planned after unified search superseded split search modes.
 
 2026-05-19 change request: explicit search mode selection was removed. Search now uses one unified query path again, while handwriting remains a separate input entry point.
+
+2026-05-19 handwriting decision: issue 006 will use `kanjicanvas` for first-pass browser recognition.
