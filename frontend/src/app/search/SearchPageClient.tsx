@@ -1,24 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Heart, Layers, Book, Home, PencilLine } from 'lucide-react';
-import AppHeader from '@/components/AppHeader';
-import HandwritingSearchPanel from '@/components/HandwritingSearchPanel';
-import SearchBar from '@/components/SearchBar';
-import WordListItem from '@/components/WordListItem';
-import { Word } from '@/lib/types';
-import * as api from '@/lib/api';
-import { Card, CardContent } from '@/components/ui/card';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Book, Heart, Home, Layers } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
+import HandwritingSearchPanel from "@/components/HandwritingSearchPanel";
+import SearchBar from "@/components/SearchBar";
+import WordListItem from "@/components/WordListItem";
+import { Card, CardContent } from "@/components/ui/card";
+import { useDebounce } from "@/hooks/useDebounce";
+import * as api from "@/lib/api";
+import { Word } from "@/lib/types";
 
-const searchPlaceholder = 'Tìm từ vựng, kana, romaji, Hán tự hoặc nghĩa tiếng Việt...';
+const searchPlaceholder =
+  "Tìm từ vựng, kana, romaji, Hán tự hoặc nghĩa tiếng Việt...";
 
 export default function SearchPageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialQuery = searchParams.get('q') || '';
+  const initialQuery = searchParams.get("q") || "";
 
   const [query, setQuery] = useState(initialQuery);
   const [showHandwriting, setShowHandwriting] = useState(false);
@@ -26,34 +27,47 @@ export default function SearchPageClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
-
-  const [autoQuery, setAutoQuery] = useState('');
+  const [autoQuery, setAutoQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Word[] | undefined>(undefined);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const debouncedQuery = useDebounce(autoQuery.trim(), 300);
 
-  const performSearch = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setResults([]);
+  const performSearch = useCallback(
+    async (value: string) => {
+      if (!value.trim()) {
+        setResults([]);
+        setError(null);
+        return;
+      }
+
+      setLoading(true);
       setError(null);
-      return;
-    }
-    setLoading(true);
-    setError(null);
+
+      try {
+        const response = await api.searchWords(value.trim());
+        const wordsWithFavorites = response.results.map((word) => ({
+          ...word,
+          isFavorite: favorites.has(word.id),
+        }));
+        setResults(wordsWithFavorites);
+      } catch {
+        setError("Tìm kiếm thất bại. Vui lòng thử lại.");
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [favorites],
+  );
+
+  const loadFavorites = async () => {
     try {
-      const response = await api.searchWords(q.trim());
-      const wordsWithFavorites = response.results.map((word) => ({
-        ...word,
-        isFavorite: favorites.has(word.id),
-      }));
-      setResults(wordsWithFavorites);
+      const favs = await api.getFavorites();
+      setFavorites(new Set(favs.map((word) => word.id)));
     } catch {
-      setError('Tìm kiếm thất bại. Vui lòng thử lại.');
-      setResults([]);
-    } finally {
-      setLoading(false);
+      // Favorites are optional for search rendering.
     }
-  }, [favorites]);
+  };
 
   useEffect(() => {
     loadFavorites();
@@ -93,29 +107,22 @@ export default function SearchPageClient() {
     };
   }, [debouncedQuery]);
 
-  const loadFavorites = async () => {
-    try {
-      const favs = await api.getFavorites();
-      const favSet = new Set(favs.map((w) => w.id));
-      setFavorites(favSet);
-    } catch {
-      // silently fail
+  const handleSearch = (value: string) => {
+    const normalizedQuery = value.trim();
+    if (normalizedQuery) {
+      router.push(`/search?q=${encodeURIComponent(normalizedQuery)}`);
     }
   };
 
-  const handleSearch = (q: string) => {
-    if (q.trim()) {
-      router.push(`/search?q=${encodeURIComponent(q.trim())}`);
-    }
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setAutoQuery(value);
   };
 
-  const handleHandwritingSearch = (kanji: string) => {
-    setQuery(kanji);
-    router.push(`/search?q=${encodeURIComponent(kanji)}`);
-  };
-
-  const handleQueryChange = (q: string) => {
-    setAutoQuery(q);
+  const handleHandwritingCharacters = (characters: string) => {
+    const nextQuery = `${query}${characters}`;
+    setQuery(nextQuery);
+    setAutoQuery(nextQuery);
   };
 
   const handleSuggestionSelect = (word: Word) => {
@@ -135,81 +142,82 @@ export default function SearchPageClient() {
         await api.addFavorite(word.id);
         setFavorites((prev) => new Set(prev).add(word.id));
       }
+
       setResults((prev) =>
-        prev.map((w) =>
-          w.id === word.id
-            ? { ...w, isFavorite: !favorites.has(word.id) }
-            : w,
+        prev.map((item) =>
+          item.id === word.id
+            ? { ...item, isFavorite: !favorites.has(word.id) }
+            : item,
         ),
       );
     } catch {
-      // silently fail
+      // Keep search usable even if favorite sync fails.
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <AppHeader
         active="search"
         actions={
           <>
-            <Link href="/favorites" className="p-2 rounded-lg hover:bg-surface-container-low transition-colors">
-              <Heart className="w-5 h-5 text-muted-foreground" />
+            <Link
+              href="/favorites"
+              className="rounded-lg p-2 transition-colors hover:bg-surface-container-low"
+            >
+              <Heart className="h-5 w-5 text-muted-foreground" />
             </Link>
-            <Link href="/flashcards" className="p-2 rounded-lg hover:bg-surface-container-low transition-colors">
-              <Layers className="w-5 h-5 text-muted-foreground" />
+            <Link
+              href="/flashcards"
+              className="rounded-lg p-2 transition-colors hover:bg-surface-container-low"
+            >
+              <Layers className="h-5 w-5 text-muted-foreground" />
             </Link>
           </>
         }
       />
 
-      <main className="flex-grow max-w-[1100px] mx-auto px-6 py-8 w-full pb-24">
-        <section className="mb-8 max-w-[800px] mx-auto">
-          <div className="text-center mb-6">
-            <h1 className="font-headline-lg text-headline-lg text-on-background mb-2">
+      <main className="mx-auto w-full max-w-[1100px] flex-grow px-6 py-8 pb-24">
+        <section className="mx-auto mb-8 max-w-[800px]">
+          <div className="mb-6 text-center">
+            <h1 className="font-headline-lg text-headline-lg mb-2 text-on-background">
               Tra cứu từ điển
             </h1>
-            <p className="text-muted-foreground text-body-md">
+            <p className="text-body-md text-muted-foreground">
               Nhập từ vựng tiếng Nhật, kana, romaji, Hán tự hoặc nghĩa tiếng Việt
             </p>
           </div>
+
           <SearchBar
             onSearch={handleSearch}
             initialValue={query}
             placeholder={searchPlaceholder}
             suggestions={suggestions}
             suggestionsLoading={suggestionsLoading}
+            handwritingOpen={showHandwriting}
+            onHandwritingToggle={() => setShowHandwriting((visible) => !visible)}
             onSuggestionSelect={handleSuggestionSelect}
             onQueryChange={handleQueryChange}
           />
-          <div className="mt-4 flex justify-center">
-            <button
-              type="button"
-              onClick={() => setShowHandwriting((visible) => !visible)}
-              className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-label-md font-medium transition-colors ${
-                showHandwriting
-                  ? 'border-primary bg-primary text-on-primary'
-                  : 'border-outline-variant bg-surface text-muted-foreground hover:border-primary hover:text-primary'
-              }`}
-            >
-              <PencilLine className="h-4 w-4" />
-              Viết tay
-            </button>
-          </div>
+
           {showHandwriting && (
-            <HandwritingSearchPanel onSearch={handleHandwritingSearch} />
+            <HandwritingSearchPanel
+              selectedText={query}
+              onCharactersSelected={handleHandwritingCharacters}
+              onClose={() => setShowHandwriting(false)}
+            />
           )}
         </section>
 
         <section className="mt-8">
           {loading && (
             <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           )}
 
           {error && (
-            <Card className="bg-destructive/10 border-destructive/20">
+            <Card className="border-destructive/20 bg-destructive/10">
               <CardContent className="p-6 text-center">
                 <p className="text-destructive">{error}</p>
               </CardContent>
@@ -217,10 +225,12 @@ export default function SearchPageClient() {
           )}
 
           {!loading && !error && query && results.length === 0 && (
-            <Card className="text-center border border-outline-variant">
+            <Card className="border border-outline-variant text-center">
               <CardContent className="p-12">
-                <Book className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-headline-md font-semibold mb-2">Không tìm thấy kết quả</h3>
+                <Book className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+                <h3 className="text-headline-md mb-2 font-semibold">
+                  Không tìm thấy kết quả
+                </h3>
                 <p className="text-muted-foreground">
                   Thử tìm kiếm với từ khóa khác hoặc kiểm tra chính tả.
                 </p>
@@ -247,29 +257,38 @@ export default function SearchPageClient() {
         </section>
       </main>
 
-      <footer className="border-t border-outline-variant bg-surface mt-auto">
-        <div className="max-w-[1100px] mx-auto px-6 py-6">
+      <footer className="mt-auto border-t border-outline-variant bg-surface">
+        <div className="mx-auto max-w-[1100px] px-6 py-6">
           <p className="text-center text-sm text-muted-foreground">
             Carrot - Japanese-Vietnamese Dictionary
           </p>
         </div>
       </footer>
 
-      <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 md:hidden bg-surface border-t border-outline-variant shadow-soft">
-        <Link href="/" className="flex flex-col items-center text-muted-foreground hover:text-primary transition-colors">
-          <Home className="w-5 h-5" />
+      <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-outline-variant bg-surface px-4 py-3 shadow-soft md:hidden">
+        <Link
+          href="/"
+          className="flex flex-col items-center text-muted-foreground transition-colors hover:text-primary"
+        >
+          <Home className="h-5 w-5" />
           <span className="text-label-sm">Home</span>
         </Link>
-        <span className="flex flex-col items-center text-primary font-bold">
-          <Book className="w-5 h-5" />
+        <span className="flex flex-col items-center font-bold text-primary">
+          <Book className="h-5 w-5" />
           <span className="text-label-sm">Search</span>
         </span>
-        <Link href="/favorites" className="flex flex-col items-center text-muted-foreground hover:text-primary transition-colors">
-          <Heart className="w-5 h-5" />
+        <Link
+          href="/favorites"
+          className="flex flex-col items-center text-muted-foreground transition-colors hover:text-primary"
+        >
+          <Heart className="h-5 w-5" />
           <span className="text-label-sm">Favorites</span>
         </Link>
-        <Link href="/flashcards" className="flex flex-col items-center text-muted-foreground hover:text-primary transition-colors">
-          <Layers className="w-5 h-5" />
+        <Link
+          href="/flashcards"
+          className="flex flex-col items-center text-muted-foreground transition-colors hover:text-primary"
+        >
+          <Layers className="h-5 w-5" />
           <span className="text-label-sm">Learn</span>
         </Link>
       </nav>

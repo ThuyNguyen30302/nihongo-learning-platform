@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Loader2, PencilLine, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { RotateCcw, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface HandwritingSearchPanelProps {
-  onSearch: (kanji: string) => void;
+  selectedText: string;
+  onCharactersSelected: (characters: string) => void;
+  onClose: () => void;
 }
 
 interface KanjiCanvasApi {
@@ -22,7 +24,7 @@ declare global {
 }
 
 const CANVAS_ID = "kanji-handwriting-canvas";
-const CANVAS_SIZE = 280;
+const CANVAS_SIZE = 260;
 const KANJICANVAS_SCRIPT_ID = "kanjicanvas-script";
 const KANJICANVAS_PATTERNS_ID = "kanjicanvas-patterns";
 
@@ -33,6 +35,7 @@ function loadScript(id: string, src: string) {
       resolve();
       return;
     }
+
     if (existing) {
       existing.addEventListener("load", () => resolve(), { once: true });
       existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), {
@@ -55,22 +58,42 @@ function loadScript(id: string, src: string) {
 }
 
 function parseCandidates(rawCandidates: string | undefined) {
-  return (rawCandidates ?? "")
-    .split(/\s+/)
-    .map((candidate) => candidate.trim())
-    .filter(Boolean)
-    .slice(0, 10);
+  return Array.from(
+    new Set(
+      (rawCandidates ?? "")
+        .split(/\s+/)
+        .map((candidate) => candidate.trim())
+        .filter(Boolean),
+    ),
+  ).slice(0, 16);
 }
 
 export default function HandwritingSearchPanel({
-  onSearch,
+  selectedText,
+  onCharactersSelected,
+  onClose,
 }: HandwritingSearchPanelProps) {
   const initializedRef = useRef(false);
-  const [candidate, setCandidate] = useState("");
+  const recognitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [candidates, setCandidates] = useState<string[]>([]);
   const [libraryReady, setLibraryReady] = useState(false);
-  const [recognizing, setRecognizing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const recognizeCandidates = useCallback(() => {
+    if (!window.KanjiCanvas || !initializedRef.current) {
+      return;
+    }
+
+    setCandidates(parseCandidates(window.KanjiCanvas.recognize(CANVAS_ID)));
+  }, []);
+
+  const scheduleRecognition = useCallback(() => {
+    if (recognitionTimerRef.current) {
+      clearTimeout(recognitionTimerRef.current);
+    }
+
+    recognitionTimerRef.current = setTimeout(recognizeCandidates, 250);
+  }, [recognizeCandidates]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,9 +108,11 @@ export default function HandwritingSearchPanel({
           KANJICANVAS_PATTERNS_ID,
           "/vendor/kanjicanvas/ref-patterns.js",
         );
+
         if (cancelled || !window.KanjiCanvas || initializedRef.current) {
           return;
         }
+
         window.KanjiCanvas.init(CANVAS_ID);
         initializedRef.current = true;
         setLibraryReady(true);
@@ -102,124 +127,102 @@ export default function HandwritingSearchPanel({
 
     return () => {
       cancelled = true;
+      if (recognitionTimerRef.current) {
+        clearTimeout(recognitionTimerRef.current);
+      }
     };
   }, []);
 
   const handleClear = () => {
     window.KanjiCanvas?.erase(CANVAS_ID);
-    setCandidate("");
     setCandidates([]);
   };
 
   const handleUndo = () => {
     window.KanjiCanvas?.deleteLast(CANVAS_ID);
-    setCandidates([]);
+    scheduleRecognition();
   };
 
-  const handleRecognize = () => {
-    if (!window.KanjiCanvas) return;
-    setRecognizing(true);
-    try {
-      const recognizedCandidates = parseCandidates(
-        window.KanjiCanvas.recognize(CANVAS_ID),
-      );
-      setCandidates(recognizedCandidates);
-      setCandidate(recognizedCandidates[0] ?? "");
-    } finally {
-      setRecognizing(false);
-    }
-  };
-
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    const normalizedCandidate = candidate.trim();
-    if (normalizedCandidate) {
-      onSearch(normalizedCandidate);
-    }
-  };
-
-  const handleCandidateSearch = (value: string) => {
-    setCandidate(value);
-    onSearch(value);
+  const handleCandidateClick = (value: string) => {
+    onCharactersSelected(value);
   };
 
   return (
-    <div className="mx-auto mt-5 w-full max-w-2xl rounded-lg border border-outline-variant bg-surface p-4">
-      <div className="flex flex-col gap-4 md:flex-row">
-        <canvas
-          id={CANVAS_ID}
-          width={CANVAS_SIZE}
-          height={CANVAS_SIZE}
-          data-stroke-numbers="false"
-          className="aspect-square w-full max-w-[280px] touch-none rounded-lg border border-outline-variant bg-[#fffaf2] shadow-sm [background-image:linear-gradient(#e5ded3_1px,transparent_1px),linear-gradient(90deg,#e5ded3_1px,transparent_1px)] [background-size:70px_70px]"
-          aria-label="Handwriting input canvas"
-        />
+    <div className="mx-auto mt-3 w-full max-w-2xl rounded-lg border border-outline-variant bg-surface p-3 shadow-soft">
+      <div className="grid gap-3 md:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="space-y-2">
+          <canvas
+            id={CANVAS_ID}
+            width={CANVAS_SIZE}
+            height={CANVAS_SIZE}
+            data-stroke-numbers="false"
+            onMouseUp={scheduleRecognition}
+            onMouseLeave={scheduleRecognition}
+            onPointerUp={scheduleRecognition}
+            onTouchEnd={scheduleRecognition}
+            className="aspect-square w-full touch-none rounded-lg border border-outline-variant bg-[#fffaf2] shadow-sm [background-image:linear-gradient(#e5ded3_1px,transparent_1px),linear-gradient(90deg,#e5ded3_1px,transparent_1px)] [background-size:65px_65px]"
+            aria-label="Khung viết tay Hán tự"
+          />
 
-        <form onSubmit={handleSubmit} className="flex min-w-0 flex-1 flex-col gap-3">
-          <div className="flex items-center gap-2 text-label-md font-semibold text-muted-foreground">
-            <PencilLine className="h-4 w-4" />
-            Viết tay
-          </div>
-
-          {loadError ? (
-            <p className="text-sm text-destructive">{loadError}</p>
-          ) : (
+          <div className="grid grid-cols-3 gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleRecognize}
-              disabled={!libraryReady || recognizing}
-              className="w-fit"
+              onClick={handleUndo}
+              disabled={!libraryReady}
             >
-              {recognizing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Nhận diện
-            </Button>
-          )}
-
-          {candidates.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {candidates.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => handleCandidateSearch(value)}
-                  className={`grid h-10 w-10 place-items-center rounded-md border text-lg font-semibold transition-colors ${
-                    candidate === value
-                      ? "border-primary bg-primary text-on-primary"
-                      : "border-outline-variant bg-background text-on-surface hover:border-primary hover:text-primary"
-                  }`}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <input
-            value={candidate}
-            onChange={(event) => setCandidate(event.target.value)}
-            placeholder="Nhập hán tự ứng viên"
-            className="rounded-lg border border-input bg-background px-3 py-2 text-body-md outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary/20"
-          />
-
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={handleUndo}>
               <RotateCcw className="mr-2 h-4 w-4" />
-              Lùi nét
+              Lùi
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={handleClear}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleClear}
+              disabled={!libraryReady}
+            >
               <Trash2 className="mr-2 h-4 w-4" />
               Xóa
             </Button>
-            <Button type="submit" size="sm">
-              <Search className="mr-2 h-4 w-4" />
-              Tìm
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              <X className="mr-2 h-4 w-4" />
+              Tắt
             </Button>
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="min-h-12 rounded-md border border-outline-variant bg-background px-3 py-2">
+            <p className="text-xs font-medium text-muted-foreground">Đã chọn</p>
+            <p className="mt-1 min-h-6 break-all text-xl font-semibold text-on-surface">
+              {selectedText || "Chưa có ký tự"}
+            </p>
+          </div>
+
+          <div className="min-h-[166px] rounded-md border border-outline-variant bg-background p-3">
+            {loadError ? (
+              <p className="text-sm text-destructive">{loadError}</p>
+            ) : candidates.length > 0 ? (
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-4 lg:grid-cols-5">
+                {candidates.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => handleCandidateClick(value)}
+                    className="grid h-11 w-full place-items-center rounded-md border border-outline-variant bg-surface text-xl font-semibold text-on-surface transition-colors hover:border-primary hover:bg-primary hover:text-on-primary"
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-full min-h-[138px] items-center justify-center text-center text-sm text-muted-foreground">
+                {libraryReady
+                  ? "Viết Hán tự trên canvas để xem ký tự gần giống."
+                  : "Đang tải bộ nhận diện viết tay..."}
+              </div>
+            )}
           </div>
 
           <a
@@ -230,7 +233,7 @@ export default function HandwritingSearchPanel({
           >
             kanjicanvas
           </a>
-        </form>
+        </div>
       </div>
     </div>
   );
