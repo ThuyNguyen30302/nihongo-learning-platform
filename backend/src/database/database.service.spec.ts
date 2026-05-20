@@ -170,4 +170,27 @@ describe('DatabaseService', () => {
       radical_meaning: 'mặt trời',
     });
   });
+
+  it('reads radical element and original from the radical group in kanjivg svg', () => {
+    const svg = `
+      <svg>
+        <g id="kvg:06d77" kvg:element="海"></g>
+        <g id="kvg:06d77-g1" kvg:element="氵" kvg:variant="true" kvg:original="水" kvg:position="left" kvg:radical="general"></g>
+      </svg>
+    `;
+
+    expect(
+      (
+        service as unknown as {
+          extractKanjiVGMetadata: (
+            svgText: string,
+            codePoint?: string,
+          ) => { element?: string; original?: string };
+        }
+      ).extractKanjiVGMetadata(svg, '06d77'),
+    ).toEqual({
+      element: '氵',
+      original: '水',
+    });
+  });
 });

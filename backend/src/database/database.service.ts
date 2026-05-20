@@ -1249,16 +1249,46 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
 
     const svg = fs.readFileSync(svgPath, 'utf8');
-    const rootGroup = svg.match(
-      new RegExp(`<g[^>]+id="kvg:${codePoint}"[^>]*>`),
-    )?.[0];
-    if (!rootGroup) {
+    return this.extractKanjiVGMetadata(svg, codePoint);
+  }
+
+  private extractKanjiVGMetadata(svg: string, codePoint?: string) {
+    const groups = [...svg.matchAll(/<g\b([^>]*)>/g)].map((match) => match[1]);
+    if (groups.length === 0) {
+      return {};
+    }
+
+    const radicalGroups = groups
+      .map((attrs) => ({
+        attrs,
+        radical: attrs.match(/kvg:radical="([^"]+)"/)?.[1],
+      }))
+      .filter((group): group is { attrs: string; radical: string } =>
+        Boolean(group.radical),
+      );
+
+    const selectedGroup =
+      radicalGroups.find((group) => group.radical === 'general') ??
+      radicalGroups.find((group) => group.radical === 'tradit') ??
+      radicalGroups[0];
+    const attrs = selectedGroup?.attrs;
+    if (!attrs) {
+      const rootGroup = codePoint
+        ? svg.match(new RegExp(`<g[^>]+id="kvg:${codePoint}"[^>]*>`))?.[0]
+        : undefined;
+      if (rootGroup) {
+        return {
+          element: rootGroup.match(/kvg:element="([^"]+)"/)?.[1],
+          original: rootGroup.match(/kvg:original="([^"]+)"/)?.[1],
+        };
+      }
+
       return {};
     }
 
     return {
-      element: rootGroup.match(/kvg:element="([^"]+)"/)?.[1],
-      original: rootGroup.match(/kvg:original="([^"]+)"/)?.[1],
+      element: attrs.match(/kvg:element="([^"]+)"/)?.[1],
+      original: attrs.match(/kvg:original="([^"]+)"/)?.[1],
     };
   }
 
