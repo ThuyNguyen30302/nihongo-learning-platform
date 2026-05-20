@@ -8,7 +8,6 @@ export interface StrokeNumber {
 
 export interface KanjiResponse {
   kanji: string;
-  meaning_vi: string;
   meaning_en: string;
   on_reading: string;
   kun_reading: string;
@@ -55,7 +54,6 @@ export class KanjiService {
 
     return {
       kanji: kanjiData.kanji,
-      meaning_vi: kanjiData.meaning_vi,
       meaning_en: kanjiData.meaning_en,
       on_reading: kanjiData.on_reading || '',
       kun_reading: kanjiData.kun_reading || '',
@@ -65,8 +63,23 @@ export class KanjiService {
       radical: kanjiData.radical,
       radical_element: kanjiData.radical_element,
       radical_original: kanjiData.radical_original,
-
-      radical_meaning: kanjiData.radical_meaning,
+      radical_meaning: this.resolveRadicalMeaning(kanjiData),
     };
+  }
+
+  private resolveRadicalMeaning(kanjiData: Kanji) {
+    const radicalBase =
+      kanjiData.radical_original ||
+      kanjiData.radical_element ||
+      kanjiData.radical;
+
+    if (radicalBase) {
+      const radicalData = this.databaseService.getKanji(radicalBase);
+      if (radicalData?.han_viet) {
+        return radicalData.han_viet;
+      }
+    }
+
+    return kanjiData.radical_meaning;
   }
 }

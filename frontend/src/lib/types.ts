@@ -26,7 +26,6 @@ export interface StrokeNumber {
 
 export interface KanjiInfo {
   kanji: string;
-  meaning_vi: string;
   meaning_en: string;
   on_reading: string;
   kun_reading: string;

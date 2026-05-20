@@ -36,7 +36,6 @@ describe('KanjiService', () => {
 
     expect(service.getKanji('日')).toEqual({
       kanji: '日',
-      meaning_vi: 'Ngày',
       meaning_en: 'Sun',
       on_reading: 'ニチ',
       kun_reading: 'ひ',
@@ -65,5 +64,46 @@ describe('KanjiService', () => {
     });
 
     expect(service.getKanji('水')?.stroke_numbers).toEqual([]);
+  });
+
+  it('resolves radical meaning from the original radical form when available', () => {
+    databaseService.getKanji.mockImplementation((kanji: string) => {
+      if (kanji === '海') {
+        return {
+          kanji: '海',
+          meaning_en: 'Sea',
+          on_reading: 'カイ',
+          kun_reading: 'うみ',
+          stroke_count: 10,
+          stroke_paths: '',
+          radical: '水',
+          radical_element: '氵',
+          radical_original: '水',
+          radical_meaning: 'biển',
+        };
+      }
+
+      if (kanji === '水') {
+        return {
+          kanji: '水',
+          meaning_en: 'Water',
+          han_viet: 'Thủy',
+          on_reading: '',
+          kun_reading: '',
+          stroke_count: 4,
+          stroke_paths: '',
+          radical: '水',
+          radical_meaning: 'nước',
+        };
+      }
+
+      return undefined;
+    });
+
+    expect(service.getKanji('海')).toMatchObject({
+      radical_element: '氵',
+      radical_original: '水',
+      radical_meaning: 'Thủy',
+    });
   });
 });
