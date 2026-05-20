@@ -20,6 +20,7 @@ import * as api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import KanjiStrokeOrder from "@/components/KanjiStrokeOrder";
+import ExampleSentence from "@/components/ExampleSentence";
 
 function extractKanji(text: string): string[] {
   const kanji: string[] = [];
@@ -426,12 +427,11 @@ export default function WordDetailPage() {
                     <Volume2 className="w-5 h-5" />
                   </Button>
                   <div>
-                    <p className="text-body-lg text-on-surface font-medium">
-                      {word.example_sentence}
-                    </p>
-                    <p className="text-body-md text-muted-foreground mt-1">
-                      {word.example_meaning_vi}
-                    </p>
+                    <ExampleSentence
+                      sentence={word.example_sentence}
+                      meaningVi={word.example_meaning_vi}
+                      tokens={word.example_tokens}
+                    />
                   </div>
                 </CardContent>
               </Card>

@@ -74,9 +74,16 @@ export class KanjiService {
       kanjiData.radical;
 
     if (radicalBase) {
-      const radicalData = this.databaseService.getKanji(radicalBase);
-      if (radicalData?.han_viet) {
-        return radicalData.han_viet;
+      const radicalWord = this.databaseService
+        .searchWords(radicalBase)
+        .find((word) => word.kanji === radicalBase);
+
+      if (radicalWord?.han_viet) {
+        return radicalWord.han_viet;
+      }
+
+      if (radicalWord?.meaning_vi) {
+        return radicalWord.meaning_vi;
       }
     }
 

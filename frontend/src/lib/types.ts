@@ -9,7 +9,17 @@ export interface Word {
   part_of_speech: string;
   example_sentence: string;
   example_meaning_vi: string;
+  example_tokens?: ExampleToken[];
   isFavorite?: boolean;
+}
+
+export interface ExampleToken {
+  id: number;
+  surface: string;
+  start: number;
+  end: number;
+  part_of_speech: string | null;
+  meaning_vi: string | null;
 }
 
 export interface Example {

@@ -6,6 +6,7 @@ import { Bookmark, BookmarkCheck, Volume2, Layers } from "lucide-react";
 import { Word, KanjiInfo } from "@/lib/types";
 import { getKanji } from "@/lib/api";
 import KanjiStrokeOrder from "./KanjiStrokeOrder";
+import ExampleSentence from "./ExampleSentence";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -263,10 +264,11 @@ export default function WordCard({ word, onToggleFavorite }: WordCardProps) {
                 Ví dụ
               </h3>
               <div className="bg-surface-container-low/50 rounded-lg p-3">
-                <p className="text-lg">{word.example_sentence}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {word.example_meaning_vi}
-                </p>
+                <ExampleSentence
+                  sentence={word.example_sentence}
+                  meaningVi={word.example_meaning_vi}
+                  tokens={word.example_tokens}
+                />
               </div>
             </div>
           )}

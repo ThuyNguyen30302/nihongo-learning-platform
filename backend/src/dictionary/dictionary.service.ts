@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService, Word } from '../database/database.service';
+import {
+  DatabaseService,
+  Word,
+} from '../database/database.service';
 
 export interface SearchResult {
   id: number;
@@ -12,6 +15,7 @@ export interface SearchResult {
   part_of_speech: string;
   example_sentence?: string;
   example_meaning_vi?: string;
+  example_tokens?: Word['example_tokens'];
 }
 
 @Injectable()
@@ -32,6 +36,7 @@ export class DictionaryService {
         part_of_speech: word.part_of_speech,
         example_sentence: word.example_sentence || '',
         example_meaning_vi: word.example_meaning_vi || '',
+        ...(word.example_tokens ? { example_tokens: word.example_tokens } : {}),
       })),
     };
   }

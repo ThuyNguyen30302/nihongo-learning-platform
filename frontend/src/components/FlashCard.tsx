@@ -5,6 +5,7 @@ import { Volume2, Check, X, RotateCcw, BookOpen } from 'lucide-react';
 import { Word } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import ExampleSentence from './ExampleSentence';
 
 interface FlashCardProps {
   word: Word;
@@ -69,8 +70,11 @@ export default function FlashCard({ word, onMastered }: FlashCardProps) {
           {/* Example */}
           {word.example_sentence && (
             <div className="mt-4 text-center">
-              <p className="text-lg text-muted-foreground italic mb-1">{word.example_sentence}</p>
-              <p className="text-sm text-muted-foreground">{word.example_meaning_vi}</p>
+              <ExampleSentence
+                sentence={word.example_sentence}
+                meaningVi={word.example_meaning_vi}
+                tokens={word.example_tokens}
+              />
             </div>
           )}
 

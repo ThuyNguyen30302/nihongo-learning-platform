@@ -14,6 +14,31 @@ export interface Word {
   part_of_speech: string;
   example_sentence: string;
   example_meaning_vi: string;
+  example_tokens?: ExampleSentenceTokenAnnotation[];
+}
+
+export type ExampleSentenceTokenKind = 'word' | 'space' | 'punctuation';
+
+export interface ExampleSentenceTokenAnnotation {
+  id: number;
+  surface: string;
+  start: number;
+  end: number;
+  part_of_speech: string | null;
+  meaning_vi: string | null;
+}
+
+export interface FavoriteWordRow extends Favorite {
+  kanji: string;
+  kana: string;
+  romaji: string;
+  meaning_vi: string;
+  han_viet?: string;
+  meaning_en: string;
+  part_of_speech: string;
+  example_sentence: string;
+  example_meaning_vi: string;
+  example_tokens?: ExampleSentenceTokenAnnotation[];
 }
 
 export interface Kanji {
@@ -36,6 +61,201 @@ export interface Favorite {
   id: number;
   word_id: number;
   created_at: string;
+}
+
+interface ExampleSentenceToken {
+  text: string;
+  start: number;
+  end: number;
+  kind: ExampleSentenceTokenKind;
+}
+
+function classifyExampleSentenceToken(text: string): ExampleSentenceTokenKind {
+  if (/^\s+$/u.test(text)) {
+    return 'space';
+  }
+
+  if (/^[\p{P}\p{S}]+$/u.test(text)) {
+    return 'punctuation';
+  }
+
+  return 'word';
+}
+
+function tokenizeExampleSentence(sentence: string): ExampleSentenceToken[] {
+  if (!sentence) {
+    return [];
+  }
+
+  const segmenter =
+    typeof Intl !== 'undefined' && 'Segmenter' in Intl
+      ? new Intl.Segmenter('ja', { granularity: 'word' })
+      : null;
+
+  if (segmenter) {
+    return [...segmenter.segment(sentence)].map((segment) => {
+      const text = segment.segment;
+      return {
+        text,
+        start: segment.index,
+        end: segment.index + text.length,
+        kind: classifyExampleSentenceToken(text),
+      };
+    });
+  }
+
+  const tokens: ExampleSentenceToken[] = [];
+  const pattern =
+    /(\s+|[\p{P}\p{S}]+|[\p{Script=Han}]+|[\p{Script=Hiragana}]+|[\p{Script=Katakana}]+|[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?|.)/gu;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(sentence)) !== null) {
+    const text = match[1];
+    tokens.push({
+      text,
+      start: match.index,
+      end: match.index + text.length,
+      kind: classifyExampleSentenceToken(text),
+    });
+  }
+
+  return tokens;
+}
+
+function normalizeForMatching(value: string) {
+  const normalizedChars: string[] = [];
+  const indexMap: number[] = [];
+
+  for (let i = 0; i < value.length; i += 1) {
+    const char = value[i];
+    const normalized = char.normalize('NFD');
+
+    for (const normalizedChar of normalized) {
+      if (/[\p{M}]/u.test(normalizedChar)) {
+        continue;
+      }
+
+      const lower = normalizedChar.toLowerCase();
+      if (/\s/u.test(lower)) {
+        if (normalizedChars[normalizedChars.length - 1] !== ' ') {
+          normalizedChars.push(' ');
+          indexMap.push(i);
+        }
+        continue;
+      }
+
+      normalizedChars.push(lower);
+      indexMap.push(i);
+    }
+  }
+
+  return {
+    normalized: normalizedChars.join(''),
+    indexMap,
+  };
+}
+
+function resolveVietnameseMeaning(
+  exampleMeaningVi: string,
+  tokenMeaningVi?: string,
+): string | null {
+  if (!exampleMeaningVi || !tokenMeaningVi) {
+    return null;
+  }
+
+  const candidates = splitMeaningPhrases(tokenMeaningVi).sort(
+    (a, b) => b.length - a.length,
+  );
+
+  const normalizedMeaning = normalizeForMatching(exampleMeaningVi);
+
+  for (const candidate of candidates) {
+    if (exampleMeaningVi.includes(candidate)) {
+      return candidate;
+    }
+
+    const normalizedCandidate = normalizeForMatching(candidate);
+    if (!normalizedCandidate.normalized) {
+      continue;
+    }
+
+    if (
+      normalizedMeaning.normalized.includes(normalizedCandidate.normalized)
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function splitMeaningPhrases(meaningVi: string): string[] {
+  return meaningVi
+    .split(/[;、,/·•\n]+/u)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function buildExampleTokens(
+  word: Pick<
+    Word,
+    | 'example_sentence'
+    | 'example_meaning_vi'
+    | 'meaning_vi'
+    | 'part_of_speech'
+    | 'id'
+    | 'kanji'
+    | 'kana'
+    | 'romaji'
+  >,
+  lookupWord: (query: string) => Word | undefined,
+): ExampleSentenceTokenAnnotation[] | undefined {
+  if (!word.example_sentence) {
+    return undefined;
+  }
+
+  const tokens = tokenizeExampleSentence(word.example_sentence);
+  const annotations = tokens.map<ExampleSentenceTokenAnnotation>(
+    (token, index) => {
+      if (token.kind !== 'word' || token.text.trim().length === 0) {
+        return {
+          id: index + 1,
+          surface: token.text,
+          start: token.start,
+          end: token.end,
+          part_of_speech: null,
+          meaning_vi: null,
+        };
+      }
+
+      const match = lookupWord(token.text);
+      if (!match) {
+        return {
+          id: index + 1,
+          surface: token.text,
+          start: token.start,
+          end: token.end,
+          part_of_speech: null,
+          meaning_vi: null,
+        };
+      }
+
+      const meaningVi = resolveVietnameseMeaning(
+        word.example_meaning_vi,
+        match.meaning_vi,
+      );
+
+      return {
+        id: index + 1,
+        surface: token.text,
+        start: token.start,
+        end: token.end,
+        part_of_speech: match.part_of_speech || null,
+        meaning_vi: meaningVi,
+      };
+    },
+  );
+
+  return annotations;
 }
 
 @Injectable()
@@ -1293,6 +1513,10 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   searchWords(query: string): Word[] {
+    return this.searchWordsRaw(query);
+  }
+
+  private searchWordsRaw(query: string): Word[] {
     const q = query.trim();
     if (!q) return [];
 
@@ -1403,7 +1627,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     return this.db.prepare('SELECT * FROM kanji_data').all() as Kanji[];
   }
 
-  getFavorites(): (Favorite & { word: Word })[] {
+  getFavorites(): FavoriteWordRow[] {
     return this.db
       .prepare(
         `
@@ -1413,7 +1637,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       ORDER BY f.created_at DESC
     `,
       )
-      .all() as (Favorite & { word: Word })[];
+      .all() as FavoriteWordRow[];
   }
 
   addFavorite(wordId: number): Favorite {
@@ -1445,5 +1669,35 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       .prepare('SELECT id FROM favorites WHERE word_id = ?')
       .get(wordId);
     return !!result;
+  }
+
+  private annotateWord<T extends { example_sentence: string; example_meaning_vi: string; meaning_vi: string; part_of_speech: string; id: number; kanji: string; kana: string; romaji: string }>(
+    word: T,
+  ): T & { example_tokens?: ExampleSentenceTokenAnnotation[] } {
+    const cache = new Map<string, Word | undefined>();
+    const lookupWord = (query: string) => {
+      const normalized = query.trim();
+      if (!normalized) {
+        return undefined;
+      }
+
+      if (cache.has(normalized)) {
+        return cache.get(normalized);
+      }
+
+      const match = this.searchWordsRaw(normalized)[0];
+      cache.set(normalized, match);
+      return match;
+    };
+
+    const exampleTokens = buildExampleTokens(word, lookupWord);
+    if (!exampleTokens) {
+      return word as T & { example_tokens?: ExampleSentenceTokenAnnotation[] };
+    }
+
+    return {
+      ...word,
+      example_tokens: exampleTokens,
+    };
   }
 }

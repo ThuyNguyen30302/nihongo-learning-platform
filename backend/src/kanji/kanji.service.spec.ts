@@ -4,6 +4,7 @@ describe('KanjiService', () => {
   const databaseService = {
     getKanji: jest.fn(),
     getAllKanji: jest.fn(),
+    searchWords: jest.fn(),
   };
 
   const service = new KanjiService(databaseService as unknown as never);
@@ -31,8 +32,14 @@ describe('KanjiService', () => {
       radical: '日',
       radical_element: '日',
       radical_original: '',
-      radical_meaning: 'mặt trời',
+      radical_meaning: 'Nhật',
     });
+    databaseService.searchWords.mockReturnValue([
+      {
+        kanji: '日',
+        han_viet: 'Nhật',
+      },
+    ]);
 
     expect(service.getKanji('日')).toEqual({
       kanji: '日',
@@ -45,7 +52,7 @@ describe('KanjiService', () => {
       radical: '日',
       radical_element: '日',
       radical_original: '',
-      radical_meaning: 'mặt trời',
+      radical_meaning: 'Nhật',
     });
   });
 
@@ -62,6 +69,7 @@ describe('KanjiService', () => {
       radical: '水',
       radical_meaning: 'nước',
     });
+    databaseService.searchWords.mockReturnValue([]);
 
     expect(service.getKanji('水')?.stroke_numbers).toEqual([]);
   });
@@ -98,6 +106,18 @@ describe('KanjiService', () => {
       }
 
       return undefined;
+    });
+    databaseService.searchWords.mockImplementation((query: string) => {
+      if (query === '水') {
+        return [
+          {
+            kanji: '水',
+            han_viet: 'Thủy',
+          },
+        ];
+      }
+
+      return [];
     });
 
     expect(service.getKanji('海')).toMatchObject({

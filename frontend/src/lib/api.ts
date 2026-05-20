@@ -29,7 +29,7 @@ export const getRandomWords = async (count: number = 10): Promise<Word[]> => {
 };
 
 export const getFavorites = async (): Promise<Word[]> => {
-  const response = await api.get<{ favorites: Array<{ id: number; word_id: number; kanji: string; kana: string; romaji: string; meaning_vi: string; han_viet?: string; meaning_en: string; part_of_speech: string; example_sentence: string; example_meaning_vi: string }> }>('/api/favorites');
+  const response = await api.get<{ favorites: Array<{ id: number; word_id: number; kanji: string; kana: string; romaji: string; meaning_vi: string; han_viet?: string; meaning_en: string; part_of_speech: string; example_sentence: string; example_meaning_vi: string; example_tokens?: Word['example_tokens'] }> }>('/api/favorites');
   return response.data.favorites.map(fav => ({
     id: fav.word_id,
     kanji: fav.kanji,
@@ -41,6 +41,7 @@ export const getFavorites = async (): Promise<Word[]> => {
     part_of_speech: fav.part_of_speech,
     example_sentence: fav.example_sentence,
     example_meaning_vi: fav.example_meaning_vi,
+    example_tokens: fav.example_tokens,
   }));
 };
 
@@ -53,7 +54,7 @@ export const removeFavorite = async (wordId: number): Promise<void> => {
 };
 
 export const getFlashcards = async (): Promise<FlashcardData[]> => {
-  const response = await api.get<{ favorites: Array<{ id: number; word_id: number; created_at: string; kanji: string; kana: string; romaji: string; meaning_vi: string; han_viet?: string; meaning_en: string; part_of_speech: string; example_sentence: string; example_meaning_vi: string }> }>('/api/favorites');
+  const response = await api.get<{ favorites: Array<{ id: number; word_id: number; created_at: string; kanji: string; kana: string; romaji: string; meaning_vi: string; han_viet?: string; meaning_en: string; part_of_speech: string; example_sentence: string; example_meaning_vi: string; example_tokens?: Word['example_tokens'] }> }>('/api/favorites');
   return response.data.favorites.map(fav => ({
     id: fav.id,
     word: {
@@ -67,6 +68,7 @@ export const getFlashcards = async (): Promise<FlashcardData[]> => {
       part_of_speech: fav.part_of_speech,
       example_sentence: fav.example_sentence,
       example_meaning_vi: fav.example_meaning_vi,
+      example_tokens: fav.example_tokens,
     },
     mastered: false,
   }));

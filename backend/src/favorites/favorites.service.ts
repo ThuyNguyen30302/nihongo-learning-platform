@@ -1,19 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService, Favorite } from '../database/database.service';
+import {
+  DatabaseService,
+  Favorite,
+  FavoriteWordRow,
+  Word,
+} from '../database/database.service';
 
 export interface FavoriteWithWord extends Favorite {
-  word: {
-    id: number;
-    kanji: string;
-    kana: string;
-    romaji: string;
-    meaning_vi: string;
-    han_viet?: string;
-    meaning_en: string;
-    part_of_speech: string;
-    example_sentence: string;
-    example_meaning_vi: string;
-  };
+  word: Word;
 }
 
 export interface FavoriteResponse {
@@ -26,7 +20,7 @@ export interface FavoriteResponse {
 export class FavoritesService {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  getFavorites(): { favorites: FavoriteWithWord[] } {
+  getFavorites(): { favorites: FavoriteWordRow[] } {
     const favorites = this.databaseService.getFavorites();
     return { favorites };
   }

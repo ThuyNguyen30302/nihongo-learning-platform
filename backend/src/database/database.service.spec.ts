@@ -79,6 +79,27 @@ describe('DatabaseService', () => {
     );
     db.prepare(
       `
+      INSERT INTO words (kanji, kana, romaji, meaning_vi, meaning_en, part_of_speech, example_sentence, example_meaning_vi)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    ).run(
+      '水',
+      'みず',
+      'mizu',
+      'Nước',
+      'Water',
+      'danh từ',
+      '水を飲みます。',
+      'Uống nước.',
+    );
+    db.prepare(
+      `
+      INSERT INTO words_fts(rowid, kanji, kana, romaji, meaning_en, meaning_vi)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    ).run(3, '水', 'みず', 'mizu', 'Water', 'Nước');
+    db.prepare(
+      `
       INSERT INTO kanji_data (kanji, meaning_vi, meaning_en, on_reading, kun_reading, stroke_count, stroke_paths, stroke_numbers, radical, radical_element, radical_original, radical_meaning)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
@@ -146,13 +167,16 @@ describe('DatabaseService', () => {
     expect(results[0]).toMatchObject({ kanji: '日本語' });
   });
 
+
   it('returns a word by id', () => {
     expect(service.getWordById(1)).toMatchObject({
       id: 1,
       kanji: '日本',
       kana: 'にほん',
     });
+    expect(service.getWordById(1)?.example_tokens).toBeUndefined();
   });
+
 
   it('adds, reads, and removes favorites', () => {
     expect(service.addFavorite(1)).toMatchObject({ word_id: 1 });
@@ -194,3 +218,4 @@ describe('DatabaseService', () => {
     });
   });
 });
+
