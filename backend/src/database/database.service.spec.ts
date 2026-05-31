@@ -167,7 +167,6 @@ describe('DatabaseService', () => {
     expect(results[0]).toMatchObject({ kanji: '日本語' });
   });
 
-
   it('returns a word by id', () => {
     expect(service.getWordById(1)).toMatchObject({
       id: 1,
@@ -177,6 +176,316 @@ describe('DatabaseService', () => {
     expect(service.getWordById(1)?.example_tokens).toBeUndefined();
   });
 
+  it('segments example sentences with kuromoji POS metadata', () => {
+    const insertResult = db
+      .prepare(
+        `
+      INSERT INTO words (kanji, kana, romaji, meaning_vi, meaning_en, part_of_speech, example_sentence, example_meaning_vi)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+      )
+      .run(
+        '放送',
+        'ほうそう',
+        'housou',
+        'phát thanh; phát sóng',
+        'broadcast',
+        'danh từ',
+        'ニュースは毎時放送しています。',
+        'Chúng tôi phát thanh tin tức hàng giờ.',
+      );
+    const wordId = Number(insertResult.lastInsertRowid);
+    db.prepare(
+      `
+      INSERT INTO words (kanji, kana, romaji, meaning_vi, meaning_en, part_of_speech, example_sentence, example_meaning_vi)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    ).run(
+      '毎時',
+      'まいじ',
+      'maiji',
+      'mỗi tiếng; hàng giờ',
+      'hourly',
+      'danh từ, phó từ',
+      '',
+      '',
+    );
+
+    (
+      service as unknown as {
+        japaneseTokenizer: {
+          tokenize: (sentence: string) => unknown[];
+        };
+      }
+    ).japaneseTokenizer = {
+      tokenize: jest.fn().mockReturnValue([
+        {
+          surface_form: 'ニュース',
+          word_position: 1,
+          pos: '名詞',
+          pos_detail_1: '一般',
+          basic_form: 'ニュース',
+          reading: 'ニュース',
+        },
+        {
+          surface_form: 'は',
+          word_position: 5,
+          pos: '助詞',
+          pos_detail_1: '係助詞',
+          basic_form: 'は',
+          reading: 'ハ',
+        },
+        {
+          surface_form: '毎時',
+          word_position: 6,
+          pos: '接頭詞',
+          pos_detail_1: '数接続',
+          basic_form: '毎時',
+          reading: 'マイジ',
+        },
+        {
+          surface_form: '放送',
+          word_position: 8,
+          pos: '名詞',
+          pos_detail_1: 'サ変接続',
+          basic_form: '放送',
+          reading: 'ホウソウ',
+        },
+        {
+          surface_form: 'し',
+          word_position: 10,
+          pos: '動詞',
+          pos_detail_1: '自立',
+          basic_form: 'する',
+          reading: 'シ',
+        },
+        {
+          surface_form: 'て',
+          word_position: 11,
+          pos: '助詞',
+          pos_detail_1: '接続助詞',
+          basic_form: 'て',
+          reading: 'テ',
+        },
+        {
+          surface_form: 'い',
+          word_position: 12,
+          pos: '動詞',
+          pos_detail_1: '非自立',
+          basic_form: 'いる',
+          reading: 'イ',
+        },
+        {
+          surface_form: 'ます',
+          word_position: 13,
+          pos: '助動詞',
+          pos_detail_1: '*',
+          basic_form: 'ます',
+          reading: 'マス',
+        },
+        {
+          surface_form: '。',
+          word_position: 15,
+          pos: '記号',
+          pos_detail_1: '句点',
+          basic_form: '。',
+          reading: '。',
+        },
+      ]),
+    };
+
+    const word = service.getWordById(wordId);
+
+    expect(word?.example_tokens?.map((token) => token.surface)).toEqual([
+      'ニュース',
+      'は',
+      '毎時',
+      '放送',
+      'し',
+      'て',
+      'い',
+      'ます',
+      '。',
+    ]);
+    expect(
+      word?.example_tokens?.find((token) => token.surface === '放送'),
+    ).toMatchObject({
+      kind: 'word',
+      reading: 'ほうそう',
+      pos_raw: '名詞',
+      pos_detail: 'サ変接続',
+      pos_raw_label: 'danh từ',
+      pos_detail_label: 'liên kết động từ する',
+      pos_label: 'danh từ',
+      pos_group: 'noun',
+      part_of_speech: 'danh từ',
+      meaning_vi: 'phát thanh',
+    });
+    expect(
+      word?.example_tokens?.find((token) => token.surface === '毎時'),
+    ).toMatchObject({
+      surface: '毎時',
+      pos_raw: '接頭詞',
+      pos_detail: '数接続',
+      pos_raw_label: 'tiền tố',
+      pos_detail_label: 'liên kết số',
+      pos_label: 'danh từ',
+      pos_group: 'noun',
+      part_of_speech: 'danh từ, phó từ',
+      meaning_vi: 'hàng giờ',
+    });
+    expect(word?.example_tokens?.at(-1)).toMatchObject({
+      surface: '。',
+      kind: 'punctuation',
+      pos_raw: '記号',
+      pos_raw_label: 'ký hiệu',
+      pos_detail_label: 'dấu chấm câu',
+      pos_label: 'ký hiệu',
+      pos_group: 'symbol',
+    });
+    expect(
+      word?.example_tokens?.find((token) => token.surface === 'し'),
+    ).toMatchObject({
+      pos_label: 'động từ',
+      pos_group: 'verb',
+      part_of_speech: 'động từ',
+    });
+    expect(
+      word?.example_tokens?.find((token) => token.surface === 'て'),
+    ).toMatchObject({
+      pos_label: 'trợ từ',
+      pos_group: 'particle',
+      part_of_speech: 'trợ từ',
+    });
+    expect(
+      word?.example_tokens?.find((token) => token.surface === 'ます'),
+    ).toMatchObject({
+      pos_label: 'trợ động từ',
+      pos_group: 'auxiliary',
+      part_of_speech: 'trợ động từ',
+    });
+  });
+
+  it('translates raw POS details for frontend display', () => {
+    const insertResult = db
+      .prepare(
+        `
+      INSERT INTO words (kanji, kana, romaji, meaning_vi, meaning_en, part_of_speech, example_sentence, example_meaning_vi)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+      )
+      .run('ん', 'ん', 'n', '', '', 'danh từ', 'ん', '');
+    const wordId = Number(insertResult.lastInsertRowid);
+
+    (
+      service as unknown as {
+        japaneseTokenizer: {
+          tokenize: (sentence: string) => unknown[];
+        };
+      }
+    ).japaneseTokenizer = {
+      tokenize: jest.fn().mockReturnValue([
+        {
+          surface_form: 'ん',
+          word_position: 1,
+          pos: '名詞',
+          pos_detail_1: '非自立',
+          pos_detail_2: '一般',
+          basic_form: 'ん',
+          reading: 'ン',
+        },
+      ]),
+    };
+
+    expect(service.getWordById(wordId)?.example_tokens?.[0]).toMatchObject({
+      surface: 'ん',
+      basic_form: 'ん',
+      pos_raw: '名詞',
+      pos_detail: '非自立 / 一般',
+      pos_raw_label: 'danh từ',
+      pos_detail_label: 'không độc lập / thường',
+      part_of_speech: 'danh từ',
+      pos_group: 'noun',
+    });
+  });
+
+  it('returns example token annotations from search and favorites', () => {
+    const insertResult = db
+      .prepare(
+        `
+      INSERT INTO words (kanji, kana, romaji, meaning_vi, meaning_en, part_of_speech, example_sentence, example_meaning_vi)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+      )
+      .run(
+        '放送',
+        'ほうそう',
+        'housou',
+        'phát sóng',
+        'broadcast',
+        'danh từ',
+        '放送します。',
+        'Phát sóng.',
+      );
+    const wordId = Number(insertResult.lastInsertRowid);
+
+    (
+      service as unknown as {
+        japaneseTokenizer: {
+          tokenize: (sentence: string) => unknown[];
+        };
+      }
+    ).japaneseTokenizer = {
+      tokenize: jest.fn().mockReturnValue([
+        {
+          surface_form: '放送',
+          word_position: 1,
+          pos: '名詞',
+          pos_detail_1: 'サ変接続',
+          basic_form: '放送',
+          reading: 'ホウソウ',
+        },
+        {
+          surface_form: 'し',
+          word_position: 3,
+          pos: '動詞',
+          pos_detail_1: '自立',
+          basic_form: 'する',
+          reading: 'シ',
+        },
+        {
+          surface_form: 'ます',
+          word_position: 4,
+          pos: '助動詞',
+          pos_detail_1: '*',
+          basic_form: 'ます',
+          reading: 'マス',
+        },
+        {
+          surface_form: '。',
+          word_position: 6,
+          pos: '記号',
+          pos_detail_1: '句点',
+          basic_form: '。',
+          reading: '。',
+        },
+      ]),
+    };
+
+    expect(service.searchWords('放送')[0].example_tokens?.[0]).toMatchObject({
+      surface: '放送',
+      pos_label: 'danh từ',
+      reading: 'ほうそう',
+    });
+
+    service.addFavorite(wordId);
+
+    expect(service.getFavorites()[0].example_tokens?.[0]).toMatchObject({
+      surface: '放送',
+      pos_label: 'danh từ',
+      reading: 'ほうそう',
+    });
+  });
 
   it('adds, reads, and removes favorites', () => {
     expect(service.addFavorite(1)).toMatchObject({ word_id: 1 });
@@ -218,4 +527,3 @@ describe('DatabaseService', () => {
     });
   });
 });
-

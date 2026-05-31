@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
+import kuromoji from 'kuromoji';
 import * as path from 'path';
 
 export interface Word {
@@ -18,12 +19,30 @@ export interface Word {
 }
 
 export type ExampleSentenceTokenKind = 'word' | 'space' | 'punctuation';
+export type ExampleSentencePosGroup =
+  | 'noun'
+  | 'verb'
+  | 'modifier'
+  | 'particle'
+  | 'suffix'
+  | 'auxiliary'
+  | 'symbol'
+  | 'other';
 
 export interface ExampleSentenceTokenAnnotation {
   id: number;
   surface: string;
   start: number;
   end: number;
+  kind: ExampleSentenceTokenKind;
+  basic_form?: string;
+  reading?: string;
+  pos_raw?: string | null;
+  pos_detail?: string | null;
+  pos_raw_label?: string | null;
+  pos_detail_label?: string | null;
+  pos_label?: string | null;
+  pos_group?: ExampleSentencePosGroup;
   part_of_speech: string | null;
   meaning_vi: string | null;
 }
@@ -68,7 +87,31 @@ interface ExampleSentenceToken {
   start: number;
   end: number;
   kind: ExampleSentenceTokenKind;
+  basicForm?: string;
+  reading?: string;
+  posRaw?: string;
+  posDetail?: string | null;
+  posRawLabel?: string | null;
+  posDetailLabel?: string | null;
+  posLabel?: string | null;
+  posGroup?: ExampleSentencePosGroup;
+  lookupQueries?: string[];
 }
+
+interface KuromojiToken {
+  surface_form: string;
+  word_position: number;
+  pos: string;
+  pos_detail_1: string;
+  pos_detail_2?: string;
+  pos_detail_3?: string;
+  basic_form?: string;
+  reading?: string;
+}
+
+type KuromojiTokenizer = {
+  tokenize(sentence: string): KuromojiToken[];
+};
 
 function classifyExampleSentenceToken(text: string): ExampleSentenceTokenKind {
   if (/^\s+$/u.test(text)) {
@@ -82,9 +125,265 @@ function classifyExampleSentenceToken(text: string): ExampleSentenceTokenKind {
   return 'word';
 }
 
-function tokenizeExampleSentence(sentence: string): ExampleSentenceToken[] {
+function toHiragana(value: string) {
+  return value.replace(/[\u30a1-\u30f6]/g, (char) =>
+    String.fromCharCode(char.charCodeAt(0) - 0x60),
+  );
+}
+
+function formatKuromojiPosDetail(token: KuromojiToken) {
+  const details = [
+    token.pos_detail_1,
+    token.pos_detail_2,
+    token.pos_detail_3,
+  ].filter((detail): detail is string => Boolean(detail && detail !== '*'));
+
+  return details.length > 0 ? details.join(' / ') : null;
+}
+
+function translateKuromojiPosDetail(detail: string) {
+  const detailMap: Record<string, string> = {
+    一般: 'thường',
+    固有名詞: 'danh từ riêng',
+    人名: 'tên người',
+    姓: 'họ',
+    名: 'tên',
+    組織: 'tổ chức',
+    地域: 'địa danh/khu vực',
+    国: 'quốc gia',
+    代名詞: 'đại từ',
+    副詞可能: 'có thể dùng như trạng từ',
+    サ変接続: 'liên kết động từ する',
+    形容動詞語幹: 'gốc tính động từ',
+    ナイ形容詞語幹: 'gốc tính từ ない',
+    数: 'số',
+    非自立: 'không độc lập',
+    特殊: 'đặc biệt',
+    接尾: 'hậu tố',
+    助数詞: 'lượng từ',
+    接続助詞: 'trợ từ nối',
+    係助詞: 'trợ từ chủ đề',
+    格助詞: 'trợ từ cách',
+    副助詞: 'trợ từ phụ',
+    並立助詞: 'trợ từ song song',
+    終助詞: 'trợ từ cuối câu',
+    '副助詞／並立助詞／終助詞': 'trợ từ phụ / song song / cuối câu',
+    連体化: 'liên thể hóa',
+    副詞化: 'phó từ hóa',
+    名詞接続: 'nối danh từ',
+    体言接続: 'nối thể ngôn',
+    数接続: 'liên kết số',
+    自立: 'độc lập',
+    引用: 'trích dẫn',
+    空白: 'khoảng trắng',
+    句点: 'dấu chấm câu',
+    読点: 'dấu phẩy câu',
+    アルファベット: 'chữ cái Latin',
+    連用テ接続: 'nối dạng て',
+    基本形: 'dạng cơ bản',
+    仮定形: 'dạng giả định',
+    命令ｅ: 'mệnh lệnh',
+    命令ｉ: 'mệnh lệnh',
+    未然形: 'dạng chưa hoàn thành',
+    連用形: 'dạng liên dụng',
+  };
+
+  return detailMap[detail] ?? detail;
+}
+
+function formatKuromojiPosDetailLabel(token: KuromojiToken) {
+  const details = [
+    token.pos_detail_1,
+    token.pos_detail_2,
+    token.pos_detail_3,
+  ].filter((detail): detail is string => Boolean(detail && detail !== '*'));
+
+  return details.length > 0
+    ? details.map(translateKuromojiPosDetail).join(' / ')
+    : null;
+}
+
+function mapKuromojiPartOfSpeech(
+  token: Pick<KuromojiToken, 'pos' | 'pos_detail_1'>,
+): { label: string | null; group: ExampleSentencePosGroup } {
+  const posMap: Record<
+    string,
+    { label: string; group: ExampleSentencePosGroup }
+  > = {
+    名詞: { label: 'danh từ', group: 'noun' },
+    指示詞: { label: 'chỉ thị từ', group: 'noun' },
+    動詞: { label: 'động từ', group: 'verb' },
+    形容詞: { label: 'tính từ', group: 'modifier' },
+    副詞: { label: 'trạng từ', group: 'modifier' },
+    助詞: { label: 'trợ từ', group: 'particle' },
+    接続詞: { label: 'liên từ', group: 'particle' },
+    連体詞: { label: 'liên thể từ', group: 'particle' },
+    接尾辞: { label: 'hậu tố', group: 'suffix' },
+    接頭詞: { label: 'tiền tố', group: 'auxiliary' },
+    助動詞: { label: 'trợ động từ', group: 'auxiliary' },
+    判定詞: { label: 'hệ từ', group: 'auxiliary' },
+    感動詞: { label: 'thán từ', group: 'other' },
+    記号: { label: 'ký hiệu', group: 'symbol' },
+    フィラー: { label: 'từ đệm', group: 'other' },
+  };
+
+  if (token.pos_detail_1?.includes('接尾')) {
+    return { label: 'hậu tố', group: 'suffix' };
+  }
+
+  return posMap[token.pos] ?? { label: token.pos ?? null, group: 'other' };
+}
+
+function normalizePartOfSpeech(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .toLowerCase();
+}
+
+function mapDictionaryPartOfSpeech(
+  partOfSpeech?: string | null,
+): { label: string | null; group: ExampleSentencePosGroup | null } {
+  if (!partOfSpeech) {
+    return { label: null, group: null };
+  }
+
+  const normalized = normalizePartOfSpeech(partOfSpeech);
+  const candidates: Array<{
+    needle: string;
+    label: string;
+    group: ExampleSentencePosGroup;
+  }> = [
+    { needle: 'danh tu', label: 'danh từ', group: 'noun' },
+    { needle: 'dong tu', label: 'động từ', group: 'verb' },
+    { needle: 'tro dong tu', label: 'trợ động từ', group: 'auxiliary' },
+    { needle: 'tinh tu', label: 'tính từ', group: 'modifier' },
+    { needle: 'pho tu', label: 'phó từ', group: 'modifier' },
+    { needle: 'trang tu', label: 'trạng từ', group: 'modifier' },
+    { needle: 'tro tu', label: 'trợ từ', group: 'particle' },
+    { needle: 'lien tu', label: 'liên từ', group: 'particle' },
+    { needle: 'lien the', label: 'liên thể từ', group: 'particle' },
+    { needle: 'hau to', label: 'hậu tố', group: 'suffix' },
+    { needle: 'tien to', label: 'tiền tố', group: 'auxiliary' },
+    { needle: 'ky hieu', label: 'ký hiệu', group: 'symbol' },
+  ];
+
+  const match = candidates
+    .map((candidate) => ({
+      ...candidate,
+      index: normalized.indexOf(candidate.needle),
+    }))
+    .filter((candidate) => candidate.index >= 0)
+    .sort((a, b) => a.index - b.index)[0];
+
+  return match
+    ? { label: match.label, group: match.group }
+    : { label: partOfSpeech, group: 'other' };
+}
+
+function shouldUseDictionaryPartOfSpeech(
+  token: ExampleSentenceToken,
+  dictionaryPos: { label: string | null; group: ExampleSentencePosGroup | null },
+) {
+  if (!dictionaryPos.label || !dictionaryPos.group) {
+    return false;
+  }
+
+  if (/[\u3400-\u9fff]/u.test(token.text)) {
+    return true;
+  }
+
+  if (token.posRaw === '名詞' && dictionaryPos.group === 'noun') {
+    return true;
+  }
+
+  if (token.posRaw === '副詞' && dictionaryPos.group === 'modifier') {
+    return true;
+  }
+
+  return false;
+}
+
+function tokenizeWithKuromoji(
+  sentence: string,
+  tokenizer: KuromojiTokenizer,
+): ExampleSentenceToken[] {
+  const tokens: ExampleSentenceToken[] = [];
+  let cursor = 0;
+
+  for (const token of tokenizer.tokenize(sentence)) {
+    const text = token.surface_form;
+    const start = Math.max(token.word_position - 1, cursor);
+    const end = start + text.length;
+
+    if (start > cursor) {
+      const gap = sentence.slice(cursor, start);
+      tokens.push({
+        text: gap,
+        start: cursor,
+        end: start,
+        kind: classifyExampleSentenceToken(gap),
+      });
+    }
+
+    const basicForm =
+      token.basic_form && token.basic_form !== '*' ? token.basic_form : text;
+    const shouldPreferBasicForm =
+      (token.pos === '動詞' || token.pos === '形容詞') && basicForm !== text;
+    const lookupCandidates = shouldPreferBasicForm
+      ? [basicForm, text]
+      : [text, basicForm];
+    const lookupQueries = [...new Set(lookupCandidates.filter(Boolean))];
+
+    const pos = mapKuromojiPartOfSpeech(token);
+    const reading =
+      token.reading && token.reading !== '*'
+        ? toHiragana(token.reading)
+        : undefined;
+
+    tokens.push({
+      text,
+      start,
+      end,
+      kind: classifyExampleSentenceToken(text),
+      basicForm,
+      reading,
+      posRaw: token.pos,
+      posDetail: formatKuromojiPosDetail(token),
+      posRawLabel: pos.label,
+      posDetailLabel: formatKuromojiPosDetailLabel(token),
+      posLabel: pos.label,
+      posGroup: pos.group,
+      lookupQueries,
+    });
+
+    cursor = end;
+  }
+
+  if (cursor < sentence.length) {
+    const rest = sentence.slice(cursor);
+    tokens.push({
+      text: rest,
+      start: cursor,
+      end: sentence.length,
+      kind: classifyExampleSentenceToken(rest),
+    });
+  }
+
+  return tokens;
+}
+
+function tokenizeExampleSentence(
+  sentence: string,
+  tokenizer?: KuromojiTokenizer,
+): ExampleSentenceToken[] {
   if (!sentence) {
     return [];
+  }
+
+  if (tokenizer) {
+    return tokenizeWithKuromoji(sentence, tokenizer);
   }
 
   const segmenter =
@@ -178,9 +477,7 @@ function resolveVietnameseMeaning(
       continue;
     }
 
-    if (
-      normalizedMeaning.normalized.includes(normalizedCandidate.normalized)
-    ) {
+    if (normalizedMeaning.normalized.includes(normalizedCandidate.normalized)) {
       return candidate;
     }
   }
@@ -193,6 +490,31 @@ function splitMeaningPhrases(meaningVi: string): string[] {
     .split(/[;、,/·•\n]+/u)
     .map((part) => part.trim())
     .filter(Boolean);
+}
+
+function inferExamplePartOfSpeech(surface: string): string | null {
+  const normalized = surface.replace(/\s+/g, '').trim();
+  if (!normalized) {
+    return null;
+  }
+
+  if (/^[はがをにへとでやもかなの]+$/u.test(normalized)) {
+    return 'trợ từ';
+  }
+
+  if (
+    /^(する|し|して|してい|て|てい|ます|ました|ない|なかっ|だった|です|だ|いる|いく|くる|れる|られる)$/u.test(
+      normalized,
+    )
+  ) {
+    return 'động từ';
+  }
+
+  if (/^(です|だ)$/u.test(normalized)) {
+    return 'trợ động từ';
+  }
+
+  return null;
 }
 
 function buildExampleTokens(
@@ -208,33 +530,51 @@ function buildExampleTokens(
     | 'romaji'
   >,
   lookupWord: (query: string) => Word | undefined,
+  tokenizer?: KuromojiTokenizer,
 ): ExampleSentenceTokenAnnotation[] | undefined {
   if (!word.example_sentence) {
     return undefined;
   }
 
-  const tokens = tokenizeExampleSentence(word.example_sentence);
-  const annotations = tokens.map<ExampleSentenceTokenAnnotation>(
-    (token, index) => {
+  const tokens = tokenizeExampleSentence(word.example_sentence, tokenizer);
+  const annotations = tokens
+    .filter((token) => token.text.length > 0)
+    .map<ExampleSentenceTokenAnnotation>((token, index) => {
+      const inferred = token.posLabel ?? inferExamplePartOfSpeech(token.text);
+      const baseAnnotation = {
+        id: index + 1,
+        surface: token.text,
+        start: token.start,
+        end: token.end,
+        kind: token.kind,
+        ...(token.basicForm ? { basic_form: token.basicForm } : {}),
+        ...(token.reading ? { reading: token.reading } : {}),
+        ...(token.posRaw ? { pos_raw: token.posRaw } : {}),
+        ...(token.posDetail ? { pos_detail: token.posDetail } : {}),
+        ...(token.posRawLabel ? { pos_raw_label: token.posRawLabel } : {}),
+        ...(token.posDetailLabel
+          ? { pos_detail_label: token.posDetailLabel }
+          : {}),
+        ...(inferred ? { pos_label: inferred } : {}),
+        ...(token.posGroup ? { pos_group: token.posGroup } : {}),
+      };
+
       if (token.kind !== 'word' || token.text.trim().length === 0) {
         return {
-          id: index + 1,
-          surface: token.text,
-          start: token.start,
-          end: token.end,
-          part_of_speech: null,
+          ...baseAnnotation,
+          part_of_speech: inferred,
           meaning_vi: null,
         };
       }
 
-      const match = lookupWord(token.text);
+      const lookupQueries = token.lookupQueries ?? [token.text];
+      const match = lookupQueries
+        .map((query) => lookupWord(query))
+        .find((entry): entry is Word => Boolean(entry));
       if (!match) {
         return {
-          id: index + 1,
-          surface: token.text,
-          start: token.start,
-          end: token.end,
-          part_of_speech: null,
+          ...baseAnnotation,
+          part_of_speech: inferred,
           meaning_vi: null,
         };
       }
@@ -243,17 +583,26 @@ function buildExampleTokens(
         word.example_meaning_vi,
         match.meaning_vi,
       );
+      const dictionaryPos = mapDictionaryPartOfSpeech(match.part_of_speech);
+      const useDictionaryPos = shouldUseDictionaryPartOfSpeech(
+        token,
+        dictionaryPos,
+      );
 
       return {
-        id: index + 1,
-        surface: token.text,
-        start: token.start,
-        end: token.end,
-        part_of_speech: match.part_of_speech || null,
+        ...baseAnnotation,
+        ...(useDictionaryPos && dictionaryPos.label
+          ? { pos_label: dictionaryPos.label }
+          : {}),
+        ...(useDictionaryPos && dictionaryPos.group
+          ? { pos_group: dictionaryPos.group }
+          : {}),
+        part_of_speech: useDictionaryPos
+          ? match.part_of_speech || inferred
+          : inferred,
         meaning_vi: meaningVi,
       };
-    },
-  );
+    });
 
   return annotations;
 }
@@ -261,8 +610,9 @@ function buildExampleTokens(
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private db: Database.Database;
+  private japaneseTokenizer?: KuromojiTokenizer;
 
-  onModuleInit() {
+  async onModuleInit() {
     const dbPath = path.join(process.cwd(), 'data', 'dictionary.db');
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
@@ -270,6 +620,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     this.seedData();
     this.populateMissingWordHanViet();
     this.populateMissingRadicalShapes();
+    await this.initializeJapaneseTokenizer();
   }
 
   onModuleDestroy() {
@@ -318,6 +669,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
       CREATE INDEX IF NOT EXISTS idx_words_romaji ON words(romaji);
       CREATE INDEX IF NOT EXISTS idx_words_kanji ON words(kanji);
+      CREATE INDEX IF NOT EXISTS idx_words_kana ON words(kana);
       CREATE INDEX IF NOT EXISTS idx_favorites_word_id ON favorites(word_id);
     `);
 
@@ -326,6 +678,25 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     this.ensureColumn('kanji_data', 'radical_element', 'TEXT');
     this.ensureColumn('kanji_data', 'radical_original', 'TEXT');
     this.initFTS5();
+  }
+
+  private initializeJapaneseTokenizer(): Promise<void> {
+    const dicPath = path.join(
+      process.cwd(),
+      'node_modules',
+      'kuromoji',
+      'dict',
+    );
+
+    return new Promise((resolve) => {
+      kuromoji.builder({ dicPath }).build((error, tokenizer) => {
+        if (!error && tokenizer) {
+          this.japaneseTokenizer = tokenizer;
+        }
+
+        resolve();
+      });
+    });
   }
 
   private ensureColumn(table: string, column: string, definition: string) {
@@ -1422,7 +1793,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private populateMissingRadicalShapes() {
     const kanjiRows = this.db
       .prepare(
-        "SELECT kanji FROM kanji_data WHERE radical_element IS NULL OR radical_element = '' OR radical_original IS NULL",
+        `
+        SELECT kanji FROM kanji_data
+        WHERE radical_element IS NULL
+          OR radical_element = ''
+          OR radical_original IS NULL
+          OR (radical_element = kanji AND radical IS NOT NULL AND radical != kanji)
+      `,
       )
       .all() as Pick<Kanji, 'kanji'>[];
     if (kanjiRows.length === 0) {
@@ -1513,7 +1890,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   searchWords(query: string): Word[] {
-    return this.searchWordsRaw(query);
+    return this.searchWordsRaw(query).map((word) => this.annotateWord(word));
   }
 
   private searchWordsRaw(query: string): Word[] {
@@ -1612,9 +1989,14 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   getWordById(id: number): Word | undefined {
-    return this.db.prepare('SELECT * FROM words WHERE id = ?').get(id) as
+    const word = this.db.prepare('SELECT * FROM words WHERE id = ?').get(id) as
       | Word
       | undefined;
+    if (!word) {
+      return undefined;
+    }
+
+    return this.annotateWord(word);
   }
 
   getKanji(kanji: string): Kanji | undefined {
@@ -1628,7 +2010,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   getFavorites(): FavoriteWordRow[] {
-    return this.db
+    const favorites = this.db
       .prepare(
         `
       SELECT f.*, w.kanji, w.kana, w.romaji, w.meaning_vi, w.han_viet, w.meaning_en, w.part_of_speech, w.example_sentence, w.example_meaning_vi
@@ -1638,6 +2020,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `,
       )
       .all() as FavoriteWordRow[];
+
+    return favorites.map((favorite) => this.annotateWord(favorite));
   }
 
   addFavorite(wordId: number): Favorite {
@@ -1671,10 +2055,30 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     return !!result;
   }
 
-  private annotateWord<T extends { example_sentence: string; example_meaning_vi: string; meaning_vi: string; part_of_speech: string; id: number; kanji: string; kana: string; romaji: string }>(
-    word: T,
-  ): T & { example_tokens?: ExampleSentenceTokenAnnotation[] } {
+  private annotateWord<
+    T extends {
+      example_sentence: string;
+      example_meaning_vi: string;
+      meaning_vi: string;
+      part_of_speech: string;
+      id: number;
+      kanji: string;
+      kana: string;
+      romaji: string;
+    },
+  >(word: T): T & { example_tokens?: ExampleSentenceTokenAnnotation[] } {
+    if (!word.example_sentence) {
+      return word as T & { example_tokens?: ExampleSentenceTokenAnnotation[] };
+    }
+
     const cache = new Map<string, Word | undefined>();
+    const exactKanjiLookup = this.db.prepare(
+      'SELECT * FROM words WHERE kanji = ? ORDER BY id ASC LIMIT 1',
+    );
+    const exactKanaLookup = this.db.prepare(
+      'SELECT * FROM words WHERE kana = ? ORDER BY id ASC LIMIT 1',
+    );
+
     const lookupWord = (query: string) => {
       const normalized = query.trim();
       if (!normalized) {
@@ -1685,12 +2089,18 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         return cache.get(normalized);
       }
 
-      const match = this.searchWordsRaw(normalized)[0];
+      const match =
+        (exactKanjiLookup.get(normalized) as Word | undefined) ??
+        (exactKanaLookup.get(normalized) as Word | undefined);
       cache.set(normalized, match);
       return match;
     };
 
-    const exampleTokens = buildExampleTokens(word, lookupWord);
+    const exampleTokens = buildExampleTokens(
+      word,
+      lookupWord,
+      this.japaneseTokenizer,
+    );
     if (!exampleTokens) {
       return word as T & { example_tokens?: ExampleSentenceTokenAnnotation[] };
     }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Bookmark, BookmarkCheck, Volume2 } from 'lucide-react';
 import { Word } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import ExampleSentence from './ExampleSentence';
 
 interface WordListItemProps {
   word: Word;
@@ -81,6 +82,16 @@ export default function WordListItem({ word, onToggleFavorite }: WordListItemPro
           <p className="mt-2 text-label-sm text-muted-foreground">
             Hán Việt: {word.han_viet}
           </p>
+        )}
+
+        {word.example_sentence && (
+          <div className="mt-3 border-t border-outline-variant pt-3">
+            <ExampleSentence
+              sentence={word.example_sentence}
+              meaningVi={word.example_meaning_vi}
+              tokens={word.example_tokens}
+            />
+          </div>
         )}
       </div>
     </Link>

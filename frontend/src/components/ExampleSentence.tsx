@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { searchWords } from "@/lib/api";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { ExampleToken, Word } from "@/lib/types";
+import type { ExampleToken } from "@/lib/types";
 
 interface ExampleSentenceProps {
   sentence: string;
@@ -15,200 +14,167 @@ interface ExampleSentenceProps {
 interface TextSpan {
   id: number | string;
   text: string;
-  tokenId?: number;
-  title?: string;
+  token?: ExampleToken;
+  posLabel?: string;
+  posGroup?: NonNullable<ExampleToken["pos_group"]>;
 }
 
-function normalizeForMatch(value: string) {
+function normalize(value: string) {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
     .toLowerCase()
     .trim();
 }
 
-function buildNormalizedMap(value: string) {
-  let normalized = "";
-  const sourceIndexes: number[] = [];
-
-  for (const [index, char] of Array.from(value).entries()) {
-    const normalizedChar = normalizeForMatch(char);
-    for (const piece of Array.from(normalizedChar)) {
-      normalized += piece;
-      sourceIndexes.push(index);
-    }
-  }
-
-  return { normalized, sourceIndexes };
+function isParticle(surface: string) {
+  return /^(は|が|を|に|へ|と|で|や|も|の|か|ね|よ|な|ぞ|さ)$/u.test(surface);
 }
 
-function findAccentInsensitiveSpan(text: string, query: string) {
-  const needle = normalizeForMatch(query);
-  if (!needle) {
-    return null;
-  }
-
-  const haystack = buildNormalizedMap(text);
-  const start = haystack.normalized.indexOf(needle);
-  if (start === -1) {
-    return null;
-  }
-
-  const end = start + needle.length - 1;
-  const startIndex = haystack.sourceIndexes[start];
-  const endIndex = haystack.sourceIndexes[end];
-  if (startIndex === undefined || endIndex === undefined) {
-    return null;
-  }
-
-  return {
-    start: startIndex,
-    end: endIndex + 1,
-  };
-}
-
-const tokenLookupCache = new Map<string, Promise<Word[]>>();
-
-function segmentSentence(sentence: string) {
-  if (!sentence) {
-    return [] as Array<{ text: string; start: number; end: number; kind: "word" | "space" | "punctuation" }>;
-  }
-
-  const segmenter =
-    typeof Intl !== "undefined" && "Segmenter" in Intl
-      ? new Intl.Segmenter("ja", { granularity: "word" })
-      : null;
-
-  if (segmenter) {
-    return [...segmenter.segment(sentence)].map((segment) => {
-      const text = segment.segment;
-      const kind = /^\s+$/u.test(text)
-        ? "space"
-        : /^[\p{P}\p{S}]+$/u.test(text)
-          ? "punctuation"
-          : "word";
-
-      return {
-        text,
-        start: segment.index,
-        end: segment.index + text.length,
-        kind,
-      };
-    });
-  }
-
-  const tokens: Array<{ text: string; start: number; end: number; kind: "word" | "space" | "punctuation" }> = [];
-  const pattern =
-    /(\s+|[\p{P}\p{S}]+|[\p{Script=Han}]+|[\p{Script=Hiragana}]+|[\p{Script=Katakana}]+|[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?|.)/gu;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(sentence)) !== null) {
-    const text = match[1];
-    const kind = /^\s+$/u.test(text)
-      ? "space"
-      : /^[\p{P}\p{S}]+$/u.test(text)
-        ? "punctuation"
-        : "word";
-
-    tokens.push({
-      text,
-      start: match.index,
-      end: match.index + text.length,
-      kind,
-    });
-  }
-
-  return tokens;
-}
-
-async function lookupWordCandidates(query: string) {
-  const normalized = query.trim();
-  if (!normalized) {
-    return [] as Word[];
-  }
-
-  const cached = tokenLookupCache.get(normalized);
-  if (cached) {
-    return cached;
-  }
-
-  const request = searchWords(normalized)
-    .then((response) => response.results ?? [])
-    .catch(() => [] as Word[]);
-
-  tokenLookupCache.set(normalized, request);
-  return request;
-}
-
-async function analyzeSentence(sentence: string, meaningVi: string) {
-  const tokens = segmentSentence(sentence);
-
-  return Promise.all(
-    tokens.map(async (token, index) => {
-      if (token.kind !== "word" || !token.text.trim()) {
-        return {
-          id: index + 1,
-          surface: token.text,
-          start: token.start,
-          end: token.end,
-          part_of_speech: null,
-          meaning_vi: null,
-        } as ExampleToken;
-      }
-
-      const candidates = await lookupWordCandidates(token.text);
-      const word =
-        candidates.find(
-          (candidate) =>
-            candidate.kanji === token.text ||
-            candidate.kana === token.text ||
-            candidate.romaji.toLowerCase() === token.text.toLowerCase(),
-        ) ?? candidates[0];
-
-      const meaningMatch = findBestMeaningSpan(meaningVi, word?.meaning_vi);
-
-      return {
-        id: index + 1,
-        surface: token.text,
-        start: token.start,
-        end: token.end,
-        part_of_speech: word?.part_of_speech || null,
-        meaning_vi: meaningMatch?.text ?? null,
-      } as ExampleToken;
-    }),
+function isVerbLike(surface: string) {
+  return /^(する|し|して|してい|て|てい|ます|ました|ない|なかっ|だった|です|だ|いる|いく|くる|れる|られる|た)$/u.test(
+    surface,
   );
 }
 
-function findBestMeaningSpan(meaningVi: string, tokenMeaningVi?: string | null) {
-  if (!meaningVi || !tokenMeaningVi) {
-    return undefined;
+function resolvePosLabel(token: ExampleToken) {
+  if (token.pos_label) {
+    return token.pos_label;
   }
 
-  const phrases = tokenMeaningVi
-    .split(/[;、,/·•\n]+/u)
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length);
+  const source = normalize(token.part_of_speech ?? "");
+  const surface = token.surface.replace(/\s+/g, "");
 
-  for (const phrase of phrases) {
-    const exactIndex = meaningVi.indexOf(phrase);
-    if (exactIndex >= 0) {
-      return {
-        text: phrase,
-        start: exactIndex,
-        end: exactIndex + phrase.length,
-      };
-    }
+  if (source.includes("tro dong tu") || source.includes("aux")) {
+    return "trợ động từ";
+  }
+  if (
+    source.includes("dong tu") ||
+    source.includes("verb") ||
+    /^v\d|^vs|^vk|^vn|^aux-v/u.test(source)
+  ) {
+    return "động từ";
+  }
+  if (
+    source.includes("danh tu") ||
+    source.includes("noun") ||
+    source.includes("n-suf")
+  ) {
+    return "danh từ";
+  }
+  if (source.includes("tinh tu") || source.includes("adjective")) {
+    return "tính từ";
+  }
+  if (source.includes("pho tu") || source.includes("adverb")) {
+    return "trạng từ";
+  }
+  if (source.includes("tro tu") || source.includes("particle")) {
+    return "trợ từ";
+  }
+  if (source.includes("hau to") || source.includes("suffix")) {
+    return "hậu tố";
+  }
+  if (source.includes("ky hieu") || source.includes("symbol")) {
+    return "ký hiệu";
+  }
+  if (isParticle(surface)) {
+    return "trợ từ";
+  }
+  if (isVerbLike(surface)) {
+    return "động từ";
+  }
+  return "từ";
+}
 
-    const normalizedMatch = findAccentInsensitiveSpan(meaningVi, phrase);
-    if (normalizedMatch) {
-      return {
-        text: meaningVi.slice(normalizedMatch.start, normalizedMatch.end),
-        ...normalizedMatch,
-      };
-    }
+function resolvePosGroup(
+  token: ExampleToken,
+): NonNullable<ExampleToken["pos_group"]> {
+  if (token.pos_group) {
+    return token.pos_group;
   }
 
-  return undefined;
+  const label = normalize(resolvePosLabel(token));
+  if (label.includes("danh tu") || label.includes("noun")) return "noun";
+  if (label.includes("dong tu") || label.includes("verb")) return "verb";
+  if (
+    label.includes("tinh tu") ||
+    label.includes("trang tu") ||
+    label.includes("pho tu")
+  ) {
+    return "modifier";
+  }
+  if (
+    label.includes("tro tu") ||
+    label.includes("lien tu") ||
+    label.includes("lien the")
+  ) {
+    return "particle";
+  }
+  if (label.includes("hau to") || label.includes("suffix")) return "suffix";
+  if (
+    label.includes("tro dong tu") ||
+    label.includes("tien to") ||
+    label.includes("he tu")
+  ) {
+    return "auxiliary";
+  }
+  if (label.includes("ky hieu") || label.includes("symbol")) return "symbol";
+  return "other";
+}
+
+function posToneClass(group: NonNullable<ExampleToken["pos_group"]>) {
+  switch (group) {
+    case "noun":
+      return "border-sky-200 bg-sky-50 text-sky-800";
+    case "verb":
+      return "border-rose-200 bg-rose-50 text-rose-800";
+    case "modifier":
+      return "border-amber-200 bg-amber-50 text-amber-800";
+    case "particle":
+      return "border-violet-200 bg-violet-50 text-violet-800";
+    case "suffix":
+      return "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-800";
+    case "auxiliary":
+      return "border-teal-200 bg-teal-50 text-teal-800";
+    case "symbol":
+      return "border-outline-variant bg-surface-container-low text-muted-foreground";
+    default:
+      return "border-primary/20 bg-white text-primary";
+  }
+}
+
+function activeTokenClass(group: NonNullable<ExampleToken["pos_group"]>) {
+  switch (group) {
+    case "noun":
+      return "border-sky-300 bg-sky-100 text-sky-900";
+    case "verb":
+      return "border-rose-300 bg-rose-100 text-rose-900";
+    case "modifier":
+      return "border-amber-300 bg-amber-100 text-amber-900";
+    case "particle":
+      return "border-violet-300 bg-violet-100 text-violet-900";
+    case "suffix":
+      return "border-fuchsia-300 bg-fuchsia-100 text-fuchsia-900";
+    case "auxiliary":
+      return "border-teal-300 bg-teal-100 text-teal-900";
+    default:
+      return "border-primary/20 bg-primary/10 text-primary";
+  }
+}
+
+function isInteractiveToken(token: ExampleToken) {
+  if (token.kind === "space" || token.kind === "punctuation") {
+    return false;
+  }
+
+  return Boolean(
+    token.part_of_speech ||
+    token.pos_label ||
+    token.meaning_vi ||
+    token.basic_form ||
+    token.reading,
+  );
 }
 
 function buildJapaneseSegments(sentence: string, tokens: ExampleToken[]) {
@@ -232,11 +198,23 @@ function buildJapaneseSegments(sentence: string, tokens: ExampleToken[]) {
       });
     }
 
+    const text = sentence.slice(token.start, token.end);
+    if (!isInteractiveToken(token)) {
+      segments.push({
+        id: `plain-token-${token.id || index}`,
+        text,
+      });
+      cursor = Math.max(cursor, token.end);
+      return;
+    }
+
+    const posGroup = resolvePosGroup(token);
     segments.push({
       id: token.id || `token-${index}`,
-      text: sentence.slice(token.start, token.end),
-      tokenId: token.id,
-      title: token.part_of_speech ?? undefined,
+      text,
+      token,
+      posLabel: resolvePosLabel(token),
+      posGroup,
     });
 
     cursor = Math.max(cursor, token.end);
@@ -252,91 +230,32 @@ function buildJapaneseSegments(sentence: string, tokens: ExampleToken[]) {
   return segments;
 }
 
-function buildVietnameseSegments(meaningVi: string, tokens: ExampleToken[]) {
-  if (!meaningVi.trim() || tokens.length === 0) {
-    return [{ id: "plain", text: meaningVi }];
+function tokenSummary(token: ExampleToken) {
+  const detailLabel = token.pos_detail_label;
+  const details = [
+    token.basic_form && token.basic_form !== token.surface
+      ? `Gốc: ${token.basic_form}`
+      : null,
+    token.reading ? `Đọc: ${token.reading}` : null,
+    detailLabel ? `Chi tiết: ${detailLabel}` : null,
+    token.meaning_vi ? `Nghĩa: ${token.meaning_vi}` : null,
+  ].filter(Boolean);
+
+  return details.join(" · ");
+}
+
+function renderTokenText(token: ExampleToken, text: string) {
+  const reading = token.reading?.trim();
+  if (!reading || reading === text) {
+    return text;
   }
 
-  const spans = tokens
-    .filter((token) => token.meaning_vi?.trim())
-    .map((token) => {
-      const match = findAccentInsensitiveSpan(meaningVi, token.meaning_vi || "");
-      if (!match) {
-        return null;
-      }
-
-      return {
-        id: token.id,
-        start: match.start,
-        end: match.end,
-      };
-    })
-    .filter(
-      (span): span is { id: number; start: number; end: number } =>
-        span !== null,
-    )
-    .sort((a, b) => {
-      const lengthA = a.end - a.start;
-      const lengthB = b.end - b.start;
-      if (lengthA !== lengthB) {
-        return lengthB - lengthA;
-      }
-      return a.start - b.start;
-    });
-
-  const chosen: { id: number; start: number; end: number }[] = [];
-  const occupied = new Array(meaningVi.length).fill(false);
-
-  for (const span of spans) {
-    let overlaps = false;
-    for (let index = span.start; index < span.end; index += 1) {
-      if (occupied[index]) {
-        overlaps = true;
-        break;
-      }
-    }
-
-    if (overlaps) {
-      continue;
-    }
-
-    for (let index = span.start; index < span.end; index += 1) {
-      occupied[index] = true;
-    }
-
-    chosen.push(span);
-  }
-
-  chosen.sort((a, b) => a.start - b.start);
-
-  const segments: TextSpan[] = [];
-  let cursor = 0;
-
-  chosen.forEach((span) => {
-    if (span.start > cursor) {
-      segments.push({
-        id: `vi-gap-${cursor}`,
-        text: meaningVi.slice(cursor, span.start),
-      });
-    }
-
-    segments.push({
-      id: span.id,
-      text: meaningVi.slice(span.start, span.end),
-      tokenId: span.id,
-    });
-
-    cursor = Math.max(cursor, span.end);
-  });
-
-  if (cursor < meaningVi.length) {
-    segments.push({
-      id: `vi-gap-${cursor}`,
-      text: meaningVi.slice(cursor),
-    });
-  }
-
-  return segments;
+  return (
+    <ruby>
+      {text}
+      <rt className="text-[10px] text-muted-foreground">{reading}</rt>
+    </ruby>
+  );
 }
 
 export default function ExampleSentence({
@@ -346,90 +265,101 @@ export default function ExampleSentence({
   className,
 }: ExampleSentenceProps) {
   const [activeTokenId, setActiveTokenId] = useState<number | null>(null);
-  const [resolvedTokens, setResolvedTokens] = useState<ExampleToken[] | null>(
-    null,
-  );
-  const activeTokens = useMemo(
-    () => (tokens && tokens.length > 0 ? tokens : resolvedTokens ?? []),
-    [tokens, resolvedTokens],
-  );
+  const [selectedTokenId, setSelectedTokenId] = useState<number | null>(null);
 
   const japaneseSegments = useMemo(
-    () => buildJapaneseSegments(sentence, activeTokens),
-    [sentence, activeTokens],
+    () => buildJapaneseSegments(sentence, tokens),
+    [sentence, tokens],
   );
 
-  const vietnameseSegments = useMemo(
-    () => buildVietnameseSegments(meaningVi, activeTokens),
-    [meaningVi, activeTokens],
+  const selectedToken = useMemo(
+    () => tokens.find((token) => token.id === selectedTokenId),
+    [selectedTokenId, tokens],
   );
-
-  useEffect(() => {
-    if (tokens && tokens.length > 0) {
-      return;
-    }
-
-    let cancelled = false;
-
-    analyzeSentence(sentence, meaningVi).then((nextTokens) => {
-      if (!cancelled) {
-        setResolvedTokens(nextTokens);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [sentence, meaningVi, tokens]);
 
   return (
     <div className={cn("space-y-2", className)}>
-      <p className="flex flex-wrap gap-x-1 gap-y-2 text-lg leading-8 text-on-surface">
-        {japaneseSegments.map((segment) =>
-          segment.tokenId ? (
-            <span
-              key={String(segment.id)}
-              title={segment.title}
-              onMouseEnter={() => setActiveTokenId(segment.tokenId ?? null)}
-              onMouseLeave={() => setActiveTokenId(null)}
-              className={cn(
-                "rounded-md px-0.5 transition-colors",
-                activeTokenId === segment.tokenId
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-surface-container-low",
-              )}
-            >
-              {segment.text}
-            </span>
-          ) : (
-            <span key={String(segment.id)} className="whitespace-pre-wrap">
-              {segment.text}
-            </span>
-          ),
-        )}
-      </p>
-
-      {meaningVi.trim() && (
-        <p className="flex flex-wrap gap-x-1 gap-y-1 text-sm leading-6 text-muted-foreground">
-          {vietnameseSegments.map((segment) =>
-            segment.tokenId ? (
-              <span
-                key={String(segment.id)}
-                className={cn(
-                  "rounded-md px-0.5 transition-colors",
-                  activeTokenId === segment.tokenId
-                    ? "bg-primary/15 text-primary font-medium"
-                    : "hover:bg-surface-container-low",
-                )}
-              >
-                {segment.text}
-              </span>
-            ) : (
+      <p className="flex flex-wrap items-start gap-x-1 gap-y-2 text-lg leading-8 text-on-surface">
+        {japaneseSegments.map((segment) => {
+          if (!segment.token) {
+            return (
               <span key={String(segment.id)} className="whitespace-pre-wrap">
                 {segment.text}
               </span>
-            ),
+            );
+          }
+
+          const isActive = activeTokenId === segment.token.id;
+          const posGroup = segment.posGroup ?? resolvePosGroup(segment.token);
+
+          return (
+            <span key={String(segment.id)} className="relative inline-flex">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+
+                  setSelectedTokenId((current) =>
+                    current === segment.token?.id
+                      ? null
+                      : (segment.token?.id ?? null),
+                  );
+                }}
+                onFocus={() => setActiveTokenId(segment.token?.id ?? null)}
+                onBlur={() => setActiveTokenId(null)}
+                onMouseEnter={() => setActiveTokenId(segment.token?.id ?? null)}
+                onMouseLeave={() => setActiveTokenId(null)}
+                className={cn(
+                  "rounded-md border px-1 py-0.5 text-left transition-colors",
+                  isActive
+                    ? activeTokenClass(posGroup)
+                    : "border-transparent hover:border-outline-variant hover:bg-surface-container-low",
+                  posGroup === "verb" && "font-semibold",
+                )}
+              >
+                {renderTokenText(segment.token, segment.text)}
+              </button>
+
+              {isActive && segment.posLabel && (
+                <span
+                  className={cn(
+                    "pointer-events-none absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-soft",
+                    posToneClass(posGroup),
+                  )}
+                >
+                  {segment.posLabel}
+                </span>
+              )}
+            </span>
+          );
+        })}
+      </p>
+
+      {selectedToken && (
+        <div className="rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-sm text-on-surface shadow-soft">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-semibold">{selectedToken.surface}</span>
+            <span
+              className={cn(
+                "rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                posToneClass(resolvePosGroup(selectedToken)),
+              )}
+            >
+              {resolvePosLabel(selectedToken)}
+            </span>
+          </div>
+          {tokenSummary(selectedToken) && (
+            <p className="mt-1 text-muted-foreground">
+              {tokenSummary(selectedToken)}
+            </p>
           )}
+        </div>
+      )}
+
+      {meaningVi.trim() && (
+        <p className="flex flex-wrap gap-x-1 gap-y-1 text-sm leading-6 text-muted-foreground">
+          <span className="whitespace-pre-wrap">{meaningVi}</span>
         </p>
       )}
     </div>

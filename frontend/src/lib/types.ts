@@ -18,6 +18,23 @@ export interface ExampleToken {
   surface: string;
   start: number;
   end: number;
+  kind?: "word" | "space" | "punctuation";
+  basic_form?: string;
+  reading?: string;
+  pos_raw?: string | null;
+  pos_detail?: string | null;
+  pos_raw_label?: string | null;
+  pos_detail_label?: string | null;
+  pos_label?: string | null;
+  pos_group?:
+    | "noun"
+    | "verb"
+    | "modifier"
+    | "particle"
+    | "suffix"
+    | "auxiliary"
+    | "symbol"
+    | "other";
   part_of_speech: string | null;
   meaning_vi: string | null;
 }
